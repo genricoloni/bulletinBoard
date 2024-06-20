@@ -9,6 +9,18 @@ int main() {
 
     printf("Client started\n");
 
+    //wait for user input
+    string command;
+    while (true) {
+        cout << "Enter a command: ";
+        cin >> command;
+
+        if (command == "list") {
+            printf("Listing\n");
+        } 
+
+    }
+
     return 0;
     
     
