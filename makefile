@@ -1,19 +1,18 @@
 # Empty target to prevent implicit build
 .PHONY: all
 
-# Compiler (replace with your compiler if needed)
+# Compiler
 CC = g++
 
-# Flags (adjust as necessary)
+# Flags 
 CFLAGS = -Wall -g -std=c++17  # -Wall for warnings, -g for debugging symbols, -std=c++17 for C++17 standard
 
-# Output binary names (adjust as needed)
+# Output binary names 
 BIN_CLIENT = client
 BIN_SERVER = server
 
-# Include directory for header files (adjust as needed)
-CPPINCLUDE = -I./src/client -I./src/server  # Assuming header files are in respective directories
-
+# Include directory for header files 
+CPPINCLUDE = -I./src/client -I./src/server  
 # Target to build the client executable
 client: src/client/*.cpp
 	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_CLIENT) src/client/*.cpp

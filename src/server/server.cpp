@@ -44,5 +44,5 @@ void Server::acceptClient() {
         exit(1);
     }
 
-    handleClient();
+    //handleClient();
 }
