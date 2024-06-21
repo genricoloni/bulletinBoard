@@ -10,14 +10,15 @@ int main(int argc, char const *argv[]){
     server.startListening();
 
     //wait for user input
-    string command;
+    std::string command;
+    std::cin >> command;
     while (true) {
-        cout << "Enter a command: ";
-        cin >> command;
 
-        if (command == "stop") {
-            break;
-        }
+        printf("Accepting client\n");
+        server.acceptClient();
+        std::cin >> command;
+
+
     }
     return 0;
 }

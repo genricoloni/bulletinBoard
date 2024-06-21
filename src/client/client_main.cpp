@@ -10,10 +10,10 @@ int main() {
     printf("Client started\n");
 
     //wait for user input
-    string command;
+    std::string command;
     while (true) {
-        cout << "Enter a command: ";
-        cin >> command;
+        std::cout << "Enter a command: ";
+        std::cin >> command;
 
         if (command == "list") {
             printf("Listing\n");

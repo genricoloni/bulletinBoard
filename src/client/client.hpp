@@ -8,7 +8,6 @@
 #include "../const.hpp"
 
 
-using namespace std;
 
 
 class Client {
@@ -18,8 +17,8 @@ public:
     ~Client();
 
     void connectToServer();
-    void sendToServer(const string& message);
-    string receiveFromServer();
+    void sendToServer(const std::string& message);
+    std::string receiveFromServer();
 
     void list(int n);
     void get(int mID);
@@ -30,7 +29,7 @@ private:
 
     struct sockaddr_in serverAddress;
 
-    string username;
+    std::string username;
 
 
 };

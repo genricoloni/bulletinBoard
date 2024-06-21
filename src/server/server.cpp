@@ -22,9 +22,14 @@ void Server::startListening() {
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     serverAddress.sin_port = htons(this->port);
 
+    const int enable = 1;
+    if (setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+        perror("setsockopt(SO_REUSEADDR) failed");
+
 
     if (bind(socket, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
         perror("Error on binding");
+        printf("Port: %d\n", this->port);
         exit(1);
     }
 

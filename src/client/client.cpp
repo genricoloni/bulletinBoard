@@ -9,7 +9,7 @@
 Client::Client() {
     socket = ::socket(AF_INET, SOCK_STREAM, 0);
     if (socket == -1) {
-        cerr << "Error creating socket" << endl;
+        std::cerr << "Error creating socket" << std::endl;
         exit(1);
     }
 
@@ -34,7 +34,7 @@ void Client::connectToServer() {
     printf("Connecting to server\n");
 
     if (connect(socket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1) {
-        cerr << "Error connecting to server" << endl;
+        std::cerr << "Error connecting to server" << std::endl;
         
         //call the destructor
         this->~Client();

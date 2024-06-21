@@ -6,8 +6,8 @@
 #include <netinet/in.h> 
 
 #include "../const.hpp"
+#include "worker.hpp"
 
-using namespace std;
 
 class Server {
 public:
