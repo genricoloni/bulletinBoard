@@ -8,10 +8,12 @@
 #include "../const.hpp"
 #include "worker.hpp"
 
+#include <thread>
+#include <csignal>
 
 class Server {
 public:
-    Server(int port, int workerCount);
+    Server(int port, int workerCount, volatile sig_atomic_t* signal_caught);
     ~Server();
 
 
@@ -27,6 +29,13 @@ private:
 
     int port;
     int workerCount;
+
+    job_t* jobs;
+
+    std::vector<Worker*> workers;
+    std::vector<std::thread> workerThreads;
+
+    volatile sig_atomic_t* signal_caught;
     
     struct sockaddr_in serverAddress;
     struct sockaddr_in clientAddress;

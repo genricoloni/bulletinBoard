@@ -1,8 +1,12 @@
 #include "../server/server.hpp"
 
-Server::Server(int port, int workerCount) {
+Server::Server(int port, int workerCount, volatile sig_atomic_t* signal_caught) {
     this->port = port;
     this->workerCount = workerCount;
+    this->signal_caught = signal_caught;
+
+    jobs = new job_t();
+    jobs->isDone = false;
 }
 
 Server::~Server() {
@@ -41,13 +45,75 @@ void Server::startListening() {
 }
 
 void Server::acceptClient() {
-    clientAddressLength = sizeof(clientAddress);
-    clientSocket = accept(socket, (struct sockaddr *) &clientAddress, (socklen_t *) &clientAddressLength);
 
-    if (clientSocket < 0) {
-        perror("Error on accept");
-        exit(1);
+    printf("Creating workers\n");
+
+    
+    jobs->isDone = false;
+
+
+
+    workers.reserve(workerCount);
+    workerThreads.reserve(workerCount);
+
+
+    for (int i = 0; i < workerCount; i++) {
+        //new worker
+        Worker* worker = new Worker(jobs);
+        workers.push_back(worker);
+        workerThreads.emplace_back([&worker]() { worker->workerMain(); });
+    
     }
 
-    //handleClient();
+    struct sockaddr_in clientAddress;
+    socklen_t clientAddressLength = sizeof(clientAddress);
+    int clientSocket = -1;
+
+    while(true){
+        //set up the select call
+        fd_set readfds;
+        FD_ZERO(&readfds);
+        FD_SET(socket, &readfds);
+
+        //timer for timeout
+        struct timeval tv;
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
+        //select call
+        int retval = select(socket + 1, &readfds, NULL, NULL, &tv);
+
+        if(retval == -1){
+            perror("Error on select");
+            std::cin >> retval;
+            exit(1);
+        }
+        if(retval == 0){
+            //timeout
+            continue;
+        }
+        clientSocket = accept(socket, (struct sockaddr *) &clientAddress, &clientAddressLength);
+        if (clientSocket < 0) {
+            perror("Error on accept");
+            exit(1);
+        }
+
+        //print the port of the client
+        printf("Client port: %d\n", ntohs(clientAddress.sin_port));
+
+
+        //accept client
+        std::lock_guard<std::mutex> lock(jobs->mutex);
+        jobs->queue.push_back(clientSocket);
+
+        #ifdef DEBUG
+        printf("Client request added to queue\n");
+        printf("Queue size: %d\n", jobs->queue.size());
+        printf("Is done: %d\n", jobs->isDone.load());
+        #endif
+
+        jobs->cv.notify_one();
+
+    }
+
 }
