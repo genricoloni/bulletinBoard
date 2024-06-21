@@ -38,9 +38,9 @@ private:
     volatile sig_atomic_t* signal_caught;
     
     struct sockaddr_in serverAddress;
-    struct sockaddr_in clientAddress;
-    int clientAddressLength;
-    int clientSocket;
+    struct sockaddr_in userAddress;
+    int userAddressLength;
+    int userSocket;
 
     void handleClient();
     void stopListening();

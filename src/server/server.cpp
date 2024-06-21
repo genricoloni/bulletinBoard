@@ -65,9 +65,9 @@ void Server::acceptClient() {
     
     }
 
-    struct sockaddr_in clientAddress;
-    socklen_t clientAddressLength = sizeof(struct sockaddr_in);
-    int clientSocket = -1;
+    struct sockaddr_in userAddress;
+    socklen_t userAddressLength = sizeof(struct sockaddr_in);
+    int userSocket = -1;
 
     while(true){
         //set up the select call
@@ -92,22 +92,22 @@ void Server::acceptClient() {
             //timeout
             continue;
         }
-        clientSocket = accept(socket, (struct sockaddr *) &clientAddress, &clientAddressLength);
-        if (clientSocket < 0) {
+        userSocket = accept(socket, (struct sockaddr *) &userAddress, &userAddressLength);
+        if (userSocket < 0) {
             perror("Error on accept");
             exit(1);
         }
 
         #ifdef DEBUG
         //print the port of the client
-        printf("Client port: %d\n", ntohs(clientAddress.sin_port));
-        printf("Client address: %s\n", inet_ntoa(clientAddress.sin_addr));
+        printf("Client port: %d\n", ntohs(userAddress.sin_port));
+        printf("Client address: %s\n", inet_ntoa(userAddress.sin_addr));
         #endif
 
 
         {//accept client
         std::lock_guard<std::mutex> lock(jobs->mutex);
-        jobs->queue.push_back(clientSocket);
+        jobs->queue.push_back(userSocket);
         }
   
 

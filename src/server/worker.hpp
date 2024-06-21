@@ -48,8 +48,8 @@ private:
     job_t* job;
 
 
-    int clientSocket;
-    struct sockaddr_in clientAddress;
-    socklen_t clientAddressLength;
-    void handleClient();
+    int userSocket;
+    struct sockaddr_in userAddress;
+    socklen_t userAddressLength;
+    void handleUser();
 };
