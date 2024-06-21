@@ -51,7 +51,10 @@ void Worker::workerMain(){
         }
         //print some about the queue
         #ifdef DEBUG
-            printf("Queue size: %d\n", job->queue.size());
+            printf("Handling client\n");
+            printf("Client port: %d\n", ntohs(clientAddress.sin_port));
+            printf("Client address: %s\n", inet_ntoa(clientAddress.sin_addr));
+
         #endif
 
         //get job
@@ -59,8 +62,11 @@ void Worker::workerMain(){
         job->queue.erase(job->queue.begin());
 
         printf("Handling client\n");
-        printf("Client socket: %d\n", clientSocket);
-        printf("Client address: %s\n", inet_ntoa(clientAddress.sin_addr));
-        printf("Client port: %d\n", ntohs(clientAddress.sin_port));
+        
+        //get the corresponding sockaddr_in
+        clientAddressLength = sizeof(struct sockaddr_in);
+        getpeername(clientSocket, (struct sockaddr *) &clientAddress, &clientAddressLength);
+
+
     }
 }

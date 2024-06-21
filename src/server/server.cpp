@@ -66,7 +66,7 @@ void Server::acceptClient() {
     }
 
     struct sockaddr_in clientAddress;
-    socklen_t clientAddressLength = sizeof(clientAddress);
+    socklen_t clientAddressLength = sizeof(struct sockaddr_in);
     int clientSocket = -1;
 
     while(true){
@@ -98,19 +98,18 @@ void Server::acceptClient() {
             exit(1);
         }
 
+        #ifdef DEBUG
         //print the port of the client
         printf("Client port: %d\n", ntohs(clientAddress.sin_port));
+        printf("Client address: %s\n", inet_ntoa(clientAddress.sin_addr));
+        #endif
 
 
-        //accept client
+        {//accept client
         std::lock_guard<std::mutex> lock(jobs->mutex);
         jobs->queue.push_back(clientSocket);
-
-        #ifdef DEBUG
-        printf("Client request added to queue\n");
-        printf("Queue size: %d\n", jobs->queue.size());
-        printf("Is done: %d\n", jobs->isDone.load());
-        #endif
+        }
+  
 
         jobs->cv.notify_one();
 
