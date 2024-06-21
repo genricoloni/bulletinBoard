@@ -6,14 +6,13 @@
 #include <netinet/in.h> 
 
 #include "../const.hpp"
-
-
+#include "../crypto/diffieHellman.hpp"
 
 
 class Client {
 public:
     
-    Client();
+    Client(int port);
     ~Client();
 
     void connectToServer();
@@ -26,6 +25,7 @@ public:
 
 private:
     int socket;
+    int port;
 
     struct sockaddr_in serverAddress;
 

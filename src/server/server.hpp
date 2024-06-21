@@ -5,11 +5,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h> 
 
-#include "../const.hpp"
-#include "worker.hpp"
-
 #include <thread>
 #include <csignal>
+
+#include "../const.hpp"
+#include "worker.hpp"
+#include "../crypto/diffieHellman.hpp"
+
 
 class Server {
 public:

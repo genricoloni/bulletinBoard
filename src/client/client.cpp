@@ -6,7 +6,7 @@
 
 
 
-Client::Client() {
+Client::Client(int port) : port(port){
     socket = ::socket(AF_INET, SOCK_STREAM, 0);
     if (socket == -1) {
         std::cerr << "Error creating socket" << std::endl;
@@ -15,10 +15,8 @@ Client::Client() {
 
 
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(SERVER_PORT);
+    serverAddress.sin_port = htons(port);
     serverAddress.sin_addr.s_addr = inet_addr(SERVER_IP);
-
-    connectToServer();
 
 }
 
