@@ -29,3 +29,6 @@
 #define USER_MAX_SIZE 16
 #define MAIL_MAX_SIZE 32
 #define PASSWORD_MAX_SIZE 8
+
+#define EPH_KEY_SIZE 1024
+#define RSA_KEY_SIZE 2048
