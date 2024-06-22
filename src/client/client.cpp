@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <string.h>
 
 
 
@@ -42,4 +43,42 @@ void Client::connectToServer() {
     else {
         printf("Connected to server\n");
     }
+}
+
+void Client::initiateProtocol() {
+    #ifdef DEBUG
+    printf("Initiating communication to create secure connection\n");
+    #endif
+
+    DiffieHellman dh;
+    EVP_PKEY *ephKey = NULL;
+
+    try{
+        //generate the key
+        ephKey = dh.generateEPHKey();
+    } catch (const std::exception &e) {
+        if (ephKey != NULL) {
+            EVP_PKEY_free(ephKey);
+        }
+        //throw the exception
+        throw std::runtime_error(e.what());
+    }
+
+    //serialize the key
+    std::vector<uint8_t> serializedKey;
+
+    try {
+        serializedKey = DiffieHellman::serializePublicKey(ephKey);
+    } catch (const std::exception &e) {
+        EVP_PKEY_free(ephKey);
+        //throw the exception
+        
+        if(!serializedKey.empty()){
+            //clear the memory using memset
+            memset(&serializedKey[0], 0, serializedKey.size());
+            serializedKey.clear();
+        }
+        throw std::runtime_error(e.what());
+    }
+
 }

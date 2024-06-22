@@ -15,11 +15,13 @@ int main(int argc, char *argv[]) {
 
     try {
         client.connectToServer();
+
+        //insert the handshake phase to ensure secure connection here
+
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(1);
     }
-    //insert the handshake phase to ensure secure connection here
 
     //wait for user input
     char* command = new char[256];

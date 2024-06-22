@@ -19,6 +19,8 @@ public:
     void sendToServer(const std::string& message);
     std::string receiveFromServer();
 
+    void initiateProtocol();
+
     void list(int n);
     void get(int mID);
     void add();
