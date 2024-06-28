@@ -5,7 +5,7 @@
 CC = g++
 
 # Flags 
-CFLAGS = -g -std=c++17 -Wno-deprecated-declarations  # -Wall for warnings, -g for debugging symbols, -std=c++17 for C++17 standard
+CFLAGS = -Wall -g -std=c++17 -Wno-deprecated-declarations  # -Wall for warnings, -g for debugging symbols, -std=c++17 for C++17 standard
 
 # Output binary names 
 BIN_CLIENT = client

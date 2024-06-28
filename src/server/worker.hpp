@@ -14,6 +14,9 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "../crypto/secureProtocol.hpp"
+#include "../crypto/diffieHellman.hpp"
+
 /*
     * Job struct
     *
@@ -52,4 +55,9 @@ private:
     struct sockaddr_in userAddress;
     socklen_t userAddressLength;
     void handleUser();
+
+    void initiateProtocol();
+
+    ssize_t receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize);
+
 };

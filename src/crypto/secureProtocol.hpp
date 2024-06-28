@@ -117,6 +117,59 @@ struct HandshakeM2 {
 
         uint32_t EPHKeyLengthNetwork = htonl(this->EPHKeyLength);
         std::memcpy(buffer.data() + position, &EPHKeyLengthNetwork, sizeof(EPHKeyLengthNetwork));
-        
-}
+        position += sizeof(EPHKeyLengthNetwork);
+
+        std::memcpy(buffer.data() + position, this->EPHKey.data(), this->EPHKeyLength);
+        position += this->EPHKeyLength;
+
+        uint32_t IVLengthNetwork = htonl(this->IVLength);
+        std::memcpy(buffer.data() + position, &IVLengthNetwork, sizeof(IVLengthNetwork));
+        position += sizeof(IVLengthNetwork);
+
+        std::memcpy(buffer.data() + position, this->IV.data(), this->IVLength);
+        position += this->IVLength;
+
+        uint32_t encryptedSignatureLengthNetwork = htonl(this->encryptedSignatureLength);
+        std::memcpy(buffer.data() + position, &encryptedSignatureLengthNetwork, sizeof(encryptedSignatureLengthNetwork));
+        position += sizeof(encryptedSignatureLengthNetwork);
+
+        std::memcpy(buffer.data() + position, this->encryptedSignature.data(), this->encryptedSignatureLength);
+
+        return buffer;
+        }
+
+    static HandshakeM2 deserialize(std::vector<uint8_t> buffer) {
+
+        HandshakeM2 m2;
+
+        size_t position = 0;
+
+        uint32_t EPHKeyLengthNetwork = 0;
+        std::memcpy(&EPHKeyLengthNetwork, buffer.data() + position, sizeof(EPHKeyLengthNetwork));
+        m2.EPHKeyLength = ntohl(EPHKeyLengthNetwork);
+        position += sizeof(EPHKeyLengthNetwork);
+
+        m2.EPHKey.resize(m2.EPHKeyLength);
+        std::memcpy(m2.EPHKey.data(), buffer.data() + position, m2.EPHKeyLength);
+        position += m2.EPHKeyLength;
+
+        uint32_t IVLengthNetwork = 0;
+        std::memcpy(&IVLengthNetwork, buffer.data() + position, sizeof(IVLengthNetwork));
+        m2.IVLength = ntohl(IVLengthNetwork);
+        position += sizeof(IVLengthNetwork);
+
+        m2.IV.resize(m2.IVLength);
+        std::memcpy(m2.IV.data(), buffer.data() + position, m2.IVLength);
+        position += m2.IVLength;
+
+        uint32_t encryptedSignatureLengthNetwork = 0;
+        std::memcpy(&encryptedSignatureLengthNetwork, buffer.data() + position, sizeof(encryptedSignatureLengthNetwork));
+        m2.encryptedSignatureLength = ntohl(encryptedSignatureLengthNetwork);
+        position += sizeof(encryptedSignatureLengthNetwork);
+
+        m2.encryptedSignature.resize(m2.encryptedSignatureLength);
+        std::memcpy(m2.encryptedSignature.data(), buffer.data() + position, m2.encryptedSignatureLength);
+
+        return m2;
+    }
 };

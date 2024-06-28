@@ -63,10 +63,58 @@ void Worker::workerMain(){
 
         printf("Handling user\n");
         
-        //get the corresponding sockaddr_in
-        userAddressLength = sizeof(struct sockaddr_in);
-        getpeername(userSocket, (struct sockaddr *) &userAddress, &userAddressLength);
+        try
+        {
+            
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+        
 
 
     }
+
+
+}
+
+ssize_t Worker::receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize) {
+    ssize_t receivedBytes = 0;
+
+    while (receivedBytes < bufferSize) {
+        ssize_t n = recv(userSocket, buffer.data() + receivedBytes, bufferSize - receivedBytes, 0);
+
+        if (n < 0) 
+            throw std::runtime_error("Error reading from socket");
+        
+        if (n == 0) 
+            throw std::runtime_error("Connection closed");
+
+        receivedBytes += n;
+    }
+    
+        return receivedBytes;
+}
+
+void Worker::initiateProtocol() {
+    //allocate space for message M1
+    std::vector<uint8_t> serializedM1(HandshakeM2::GetSize());
+
+    try {
+        //receive the message M1
+        receiveMessage(serializedM1, HandshakeM2::GetSize());
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << '\n';
+        return;
+    }
+
+    //deserialize the message M1
+    HandshakeM2 m2 = HandshakeM2::deserialize(serializedM1);
+
+    DiffieHellman* dh = nullptr;
+
+    EVP_PKEY* EPH_KEY = nullptr;
+    EVP_PKEY* PEER_EPH_KEY = nullptr;
 }
