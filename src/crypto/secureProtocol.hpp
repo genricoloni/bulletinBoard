@@ -13,15 +13,12 @@
 struct protocolM1 {
     uint32_t EPHkeyLength;
     uint8_t EPHKey[EPH_KEY_SIZE];
-    // RSA public key
-    uint32_t publicKeyLength;
-    uint8_t publicKey[EPH_KEY_SIZE];
 
     protocolM1() {
         memset(EPHKey, 0, EPH_KEY_SIZE);
     }
 
-    protocolM1(std::vector<uint8_t>& ephKey, int keyLength, uint8_t* publicKey, int publicKeyLength) {
+    protocolM1(std::vector<uint8_t>& ephKey, int keyLength) {
         //data sanitization
         if (keyLength > EPH_KEY_SIZE) {
             throw std::invalid_argument("Key length is too large");
@@ -31,24 +28,9 @@ struct protocolM1 {
             throw std::invalid_argument("Key length does not match the key size");
         }
 
-        if (publicKeyLength > EPH_KEY_SIZE) {
-            throw std::invalid_argument("Public key length is too large");
-        }
-        
-        if (publicKeyLength > EPH_KEY_SIZE) {
-            throw std::invalid_argument("Public key length is too large");
-        }
-
-        if(publicKey == NULL) {
-            throw std::invalid_argument("Public key is NULL");
-        }
-
         this->EPHkeyLength = keyLength;
-        this->publicKeyLength = publicKeyLength;
 
         memcpy(this->EPHKey, ephKey.data(), keyLength);
-        memcpy(this->publicKey, publicKey, publicKeyLength);
-
     }
 
     void serialize(std::vector<uint8_t>& buffer) {
@@ -61,20 +43,10 @@ struct protocolM1 {
 
         std::memcpy(buffer.data() + position, EPHKey, EPHkeyLength);
         position += EPHkeyLength;
-
-        uint32_t publicKeySizeNetwork = htonl(publicKeyLength);
-        std::memcpy(buffer.data() + position, &publicKeySizeNetwork, sizeof(publicKeySizeNetwork));
-
-        position += sizeof(publicKeySizeNetwork);
-        std::memcpy(buffer.data() + position, publicKey, publicKeyLength);
-
     }
 
     static inline int GetSize() {
-        return sizeof(EPHkeyLength) + 
-                sizeof(EPHKey) + 
-                sizeof(publicKeyLength) + 
-                sizeof(publicKey);
+        return sizeof(EPHkeyLength) + sizeof(EPHKey);
     }
 
     protocolM1 deserialize(std::vector<uint8_t>& buffer) {
@@ -90,12 +62,6 @@ struct protocolM1 {
         std::memcpy(m1.EPHKey, 0, sizeof(m1.EPHKey));
         std::memcpy(m1.EPHKey, buffer.data() + position, sizeof(m1.EPHKey));
         position += sizeof(m1.EPHKey) * EPH_KEY_SIZE;
-
-        m1.publicKeyLength = ntohl(*(uint32_t*)(buffer.data() + position));
-        position += sizeof(m1.publicKeyLength);
-
-        std::memcpy(m1.publicKey, 0, sizeof(m1.publicKey));
-        std::memcpy(m1.publicKey, buffer.data() + position, m1.publicKeyLength);
 
         return m1;
     }
