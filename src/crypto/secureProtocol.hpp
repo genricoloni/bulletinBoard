@@ -66,3 +66,57 @@ struct protocolM1 {
         return m1;
     }
 };
+
+struct HandshakeM2 {
+
+    std::vector<uint8_t> EPHKey;
+    uint32_t EPHKeyLength;
+    std::vector<uint8_t> IV;
+    uint32_t IVLength;
+    std::vector<uint8_t> encryptedSignature;
+    uint32_t encryptedSignatureLength;
+
+    HandshakeM2() {
+        EPHKeyLength = 0;
+        IVLength = 0;
+        encryptedSignatureLength = 0;
+    }
+
+    static int GetSize() {
+
+        int size = 0;
+
+        size += EPH_KEY_SIZE * sizeof(uint8_t);
+        size += sizeof(uint32_t);
+        size += AES_BLOCK_SIZE * sizeof(uint8_t);
+        size += sizeof(uint32_t);
+        size += ENCRYPTED_SIGNATURE_SIZE * sizeof(uint8_t);
+        size += sizeof(uint32_t);
+
+        return size;
+    }
+
+    HandshakeM2 (std::vector<uint8_t>EPHKey, std::vector<uint8_t>IV, std::vector<uint8_t>encryptedSignature) {
+        this->EPHKeyLength = (unsigned int)EPHKey.size();
+        this->IVLength = (unsigned int)IV.size();
+        this->encryptedSignatureLength = (unsigned int)encryptedSignature.size();
+
+        this->EPHKey.resize(this->EPHKeyLength);
+        std::memcpy(this->EPHKey.data(), EPHKey.data(), this->EPHKeyLength);
+
+        this->IV.resize(this->IVLength);
+        std::memcpy(this->IV.data(), IV.data(), this->IVLength);
+
+        this->encryptedSignature.resize(this->encryptedSignatureLength);
+        std::memcpy(this->encryptedSignature.data(), encryptedSignature.data(), this->encryptedSignatureLength);
+    }
+
+    std::vector<uint8_t> serialize() {
+        std::vector<uint8_t> buffer(HandshakeM2::GetSize());
+        size_t position = 0;
+
+        uint32_t EPHKeyLengthNetwork = htonl(this->EPHKeyLength);
+        std::memcpy(buffer.data() + position, &EPHKeyLengthNetwork, sizeof(EPHKeyLengthNetwork));
+        
+}
+};

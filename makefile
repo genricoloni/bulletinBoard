@@ -5,28 +5,29 @@
 CC = g++
 
 # Flags 
-CFLAGS = -Wall -g -std=c++17  # -Wall for warnings, -g for debugging symbols, -std=c++17 for C++17 standard
+CFLAGS = -g -std=c++17 -Wno-deprecated-declarations  # -Wall for warnings, -g for debugging symbols, -std=c++17 for C++17 standard
 
 # Output binary names 
 BIN_CLIENT = client
 BIN_SERVER = server
 
-# Include directory for header files 
-CPPINCLUDE = -I./src/client -I./src/server  
+# Include directories for header files 
+CPPINCLUDE = -I./src/client -I./src/server -I./src/crypto  # Include crypto directory
+
 # Target to build the client executable
-client: src/client/*.cpp
-	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_CLIENT) src/client/*.cpp
+client: src/client/*.cpp src/crypto/*.cpp
+	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_CLIENT) src/client/*.cpp src/crypto/*.cpp -lcrypto
 
 # Compile individual client source files into object files
-%.o: src/client/%.cpp
+%.o: src/client/%.cpp src/crypto/%.cpp
 	$(CC) $(CFLAGS) $(CPPINCLUDE) -c $< -o $@  # Create object file
 
 # Target to build the server executable
-server: src/server/*.cpp
-	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_SERVER) src/server/*.cpp
+server: src/server/*.cpp src/crypto/*.cpp
+	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_SERVER) src/server/*.cpp src/crypto/*.cpp -lcrypto
 
 # Compile individual server source files into object files
-%.o: src/server/%.cpp
+%.o: src/server/%.cpp src/crypto/%.cpp
 	$(CC) $(CFLAGS) $(CPPINCLUDE) -c $< -o $@  # Create object file
 
 # Build both client and server when "all" is targeted

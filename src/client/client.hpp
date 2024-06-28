@@ -6,6 +6,13 @@
 #include <netinet/in.h> 
 
 #include "../const.hpp"
+
+#include <fstream>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <string.h>
+
 #include "../crypto/diffieHellman.hpp"
 
 
