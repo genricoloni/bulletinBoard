@@ -91,7 +91,7 @@ void Client::initiateProtocol() {
     std::vector<uint8_t> serializedEPHKey;
 
     try{
-        serializedEPHKey = DiffieHellman::serializePublicKey(EPH_KEY);
+        serializedEPHKey = DiffieHellman::serializeKey(EPH_KEY);
     }
     catch(const std::exception &e){
         EVP_PKEY_free(EPH_KEY);
@@ -131,7 +131,7 @@ void Client::initiateProtocol() {
     printf("M1 sent\n");
     #endif
 
-    
+
 
 
 };

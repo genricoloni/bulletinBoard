@@ -106,19 +106,18 @@ EVP_PKEY *DiffieHellman::generateEPHKey() {
 
     EVP_PKEY_CTX *DH_ctx = EVP_PKEY_CTX_new(mDHParameters, NULL);
     if(!DH_ctx)
-        throw std::runtime_error("\033[1;31m[ERROR]\033[0m DiffieHellman::generateEphemeralKey() >> Failed to create DH context.");
-
+        throw std::runtime_error("Error creating DH context");
     EVP_PKEY *ephemeral_key = NULL;
 
     if(EVP_PKEY_keygen_init(DH_ctx) != 1) {
         EVP_PKEY_CTX_free(DH_ctx);
-        throw std::runtime_error("\033[1;31m[ERROR]\033[0m DiffieHellman::generateEphemeralKey() >> Failed to initialize DH context.");
-    }
+        throw std::runtime_error("Error initializing keygen");
+        }
 
     if(EVP_PKEY_keygen(DH_ctx, &ephemeral_key) != 1) {
         EVP_PKEY_CTX_free(DH_ctx);
-        throw std::runtime_error("\033[1;31m[ERROR]\033[0m DiffieHellman::generateEphemeralKey() >> Failed to generate ephemeral key");
-    }
+        throw std::runtime_error("Error generating key");
+        }
     
     EVP_PKEY_CTX_free(DH_ctx);
     return ephemeral_key;
@@ -157,7 +156,7 @@ void DiffieHellman::generateSharedSecret(EVP_PKEY *privateKey, EVP_PKEY *peerEPH
     EVP_PKEY_CTX_free(ctx);
 }
 
-std::vector<uint8_t> DiffieHellman::serializePublicKey(EVP_PKEY *key) {
+std::vector<uint8_t> DiffieHellman::serializeKey(EVP_PKEY *key) {
     BIO *bio = BIO_new(BIO_s_mem());
     if (bio == NULL) {
         std::cerr << "Error creating BIO structure" << std::endl;
@@ -190,14 +189,14 @@ std::vector<uint8_t> DiffieHellman::serializePublicKey(EVP_PKEY *key) {
 }
 
 EVP_PKEY *DiffieHellman::deserializeKey(uint8_t* serializedKey, int keyLength) {
-    BIO *bio = BIO_new(BIO_s_mem());
+    BIO *bio = BIO_new_mem_buf(serializedKey, keyLength);
     if (!bio) {
         std::cerr << "Error creating BIO structure" << std::endl;
         throw std::runtime_error("Error creating BIO structure");
     }
 
     EVP_PKEY *key = NULL;
-    key = PEM_read_bio_PUBKEY(bio, &key, NULL, NULL);
+    key = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL);
 
     if(key == NULL) {
         std::cerr << "Error reading public key from BIO" << std::endl;

@@ -65,7 +65,7 @@ void Worker::workerMain(){
         
         try
         {
-            
+            initiateProtocol();
         }
         catch(const std::exception& e)
         {
@@ -99,16 +99,20 @@ ssize_t Worker::receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize)
 
 void Worker::initiateProtocol() {
     //allocate space for message M1
-    std::vector<uint8_t> serializedM1(ProtocolM2::GetSize());
+    std::vector<uint8_t> serializedM1(ProtocolM1::GetSize());
 
     try {
         //receive M1
-        this->receiveMessage(serializedM1, ProtocolM2::GetSize());
+        this->receiveMessage(serializedM1, ProtocolM1::GetSize());
     }
     catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
-        return;
+        throw std::runtime_error("Error receiving message from client");
     }
+
+    #ifdef DEBUG
+        printf("Received M1 from client %d\n", ntohs(userAddress.sin_port));
+    #endif
 
     //deserialize M1
     ProtocolM1 m1 = ProtocolM1::deserialize(serializedM1);
@@ -142,7 +146,61 @@ void Worker::initiateProtocol() {
         printf("Received EPH key\n");
     #endif
 
-    
+    //generate shared secret
+    std::vector<uint8_t> sharedSecret;
+    size_t sharedSecretSize;
 
+    try {
+        dh->generateSharedSecret(EPH_KEY, peerEPHKey, sharedSecret);
 
+        EVP_PKEY_free(peerEPHKey);
+
+        delete dh;
+        dh = nullptr;
+    } catch(const std::exception &e) {
+        
+        std::memset(sharedSecret.data(), 0, sharedSecret.size());
+        sharedSecret.clear();
+
+        if (dh != nullptr) {
+            delete dh;
+        }
+
+        EVP_PKEY_free(EPH_KEY);
+        EVP_PKEY_free(peerEPHKey);
+
+        throw e;
+    }
+
+    #ifdef DEBUG
+        printf("Shared secret generated\n");
+    #endif
+
+    //generate session hmac key
+    std::vector<uint8_t> keys;
+    uint32_t keySize;
+
+    try {
+        SHA_512::generateKeys(sharedSecret.data(), sharedSecretSize, keys, keySize);
+
+        std::memset(sharedSecret.data(), 0, sharedSecret.size());
+        sharedSecret.clear();
+    } catch(const std::exception &e) {
+        std::memset(sharedSecret.data(), 0, sharedSecret.size());
+        sharedSecret.clear();
+
+        std::memset(keys.data(), 0, keys.size());
+        keys.clear();
+
+        EVP_PKEY_free(EPH_KEY);
+
+        throw e;
+    }
+
+    #ifdef DEBUG
+        printf("Session keys generated\n");
+    #endif
+
+    std::memcpy(this->sessionKey, keys.data(), keys.size()/2 * sizeof(uint8_t));
+    std::memcpy(this->sessionIV, keys.data() + keys.size()/2, HMAC_DIGESTS_SIZE * sizeof(uint8_t));
 };
