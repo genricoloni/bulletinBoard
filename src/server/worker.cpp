@@ -202,5 +202,39 @@ void Worker::initiateProtocol() {
     #endif
 
     std::memcpy(this->sessionKey.data(), keys.data(), keys.size()/2 * sizeof(uint8_t));
-    std::memcpy(this->hmacKey.data(), keys.data() + keys.size()/2, HMAC_DIGESTS_SIZE * sizeof(uint8_t));
+    std::memcpy(this->hmacKey.data(), keys.data() + keys.size()/2, HMAC_DIGEST_SIZE * sizeof(uint8_t));
+
+    std::memset(keys.data(), 0, keys.size());
+    keys.clear();
+
+    std::vector<uint8_t> serializedEPHKey;
+
+    try{
+        serializedEPHKey = DiffieHellman::serializeKey(EPH_KEY);
+    }
+    catch(const std::exception &e){
+        EVP_PKEY_free(EPH_KEY);
+        
+        if (!serializedEPHKey.empty()) {
+            std::memset(serializedEPHKey.data(), 0, serializedEPHKey.size());
+            serializedEPHKey.clear();
+        }
+        throw e;
+    }
+
+    EVP_PKEY_free(EPH_KEY);
+
+    #ifdef DEBUG
+        printf("EPH key serialized\n");
+    #endif
+
+    auto EPHKeyBufferSize = m1.EPHkeyLength + serializedEPHKey.size();
+    std::vector<uint8_t> EPHKeyBuffer(EPHKeyBufferSize);
+    std::memcpy(EPHKeyBuffer.data(), m1.EPHKey, m1.EPHkeyLength);
+    std::memcpy(EPHKeyBuffer.data() + m1.EPHkeyLength, serializedEPHKey.data(), serializedEPHKey.size());
+
+    std::vector<unsigned char> signature;
+    
+
+
 };
