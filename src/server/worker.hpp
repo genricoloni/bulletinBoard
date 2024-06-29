@@ -18,6 +18,7 @@
 #include "../crypto/SHA512.hpp"
 #include "../crypto/secureProtocol.hpp"
 #include "../crypto/diffieHellman.hpp"
+#include "../crypto/RSASignature.hpp"
 
 /*
     * Job struct
@@ -54,6 +55,9 @@ private:
     std::vector<uint8_t> iv;
     std::vector<uint8_t> hmacKey;
     std::vector<uint8_t> sessionKey;
+
+    const std::string server_private_key_path = "../res/keys/private/server.pem";
+
 
 
     int userSocket;

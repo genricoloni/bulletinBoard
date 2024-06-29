@@ -2,6 +2,9 @@
 
 Worker::Worker(job_t* job){
     this->job = job;
+    this->iv.resize(AES_BLOCK_SIZE);
+    this->hmacKey.resize(SESSION_KEY_LENGTH);
+    this->sessionKey.resize(SESSION_KEY_LENGTH);
 
 }
 
@@ -83,7 +86,7 @@ ssize_t Worker::receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize)
     ssize_t receivedBytes = 0;
 
     while (receivedBytes < bufferSize) {
-        ssize_t n = recv(userSocket, &buffer.data()[receivedBytes], bufferSize - receivedBytes, 0);
+        ssize_t n = recv(userSocket, reinterpret_cast<unsigned char*>(&buffer.data()[receivedBytes]), bufferSize - receivedBytes, 0);
 
         if (n < 0) 
             throw std::runtime_error("Error reading from socket");
@@ -117,7 +120,7 @@ void Worker::initiateProtocol() {
     //deserialize M1
     ProtocolM1 m1 = ProtocolM1::deserialize(serializedM1);
 
-    DiffieHellman* dh = new DiffieHellman();
+    DiffieHellman* dh = nullptr;
     EVP_PKEY* EPH_KEY = nullptr;
     EVP_PKEY* peerEPHKey = nullptr;
 
@@ -128,7 +131,7 @@ void Worker::initiateProtocol() {
         EPH_KEY = dh->generateEPHKey();
 
         //deserialize peer EPH key
-        peerEPHKey = dh->deserializeKey(m1.EPHKey, m1.EPHkeyLength);
+        peerEPHKey = DiffieHellman::deserializeKey(m1.EPHKey, m1.EPHkeyLength);
     } catch (const std::exception &e) {
         if (dh != nullptr) {
             delete dh;
@@ -181,11 +184,22 @@ void Worker::initiateProtocol() {
     uint32_t keySize;
 
     try {
-        SHA512::generateHash(sharedSecret.data(), sharedSecretSize, keys, keySize);
+        #ifdef DEBUG
+            printf("Generating session keys\n");
+            //print address of sharedSecret
+            printf("Address of sharedSecret: %p\n", sharedSecret.data());
+        #endif
+        SHA512::generateHash(reinterpret_cast<const unsigned char*>(sharedSecret.data()), sharedSecret.size(), keys, keySize);
 
+        #ifdef DEBUG
+            printf("Session keys generated\n");
+        #endif
         std::memset(sharedSecret.data(), 0, sharedSecret.size());
         sharedSecret.clear();
     } catch(const std::exception &e) {
+        #ifdef DEBUG
+            std::cerr << e.what() << std::endl;
+        #endif
         std::memset(sharedSecret.data(), 0, sharedSecret.size());
         sharedSecret.clear();
 
@@ -198,14 +212,30 @@ void Worker::initiateProtocol() {
     }
 
     #ifdef DEBUG
-        printf("Session keys generated\n");
+        //print some address about keys and session keys
+        printf("Address of keys: %p\n", keys.data());
+        printf("Address of session keys: %p\n", sessionKey.data());
+
     #endif
 
     std::memcpy(this->sessionKey.data(), keys.data(), keys.size()/2 * sizeof(uint8_t));
-    std::memcpy(this->hmacKey.data(), keys.data() + keys.size()/2, HMAC_DIGEST_SIZE * sizeof(uint8_t));
+
+    #ifdef DEBUG
+        printf("Session keys copied 1\n");
+    #endif
+
+    std::memcpy(this->hmacKey.data(), keys.data() + ((keys.size()/2) * sizeof(uint8_t)), HMAC_DIGEST_SIZE * sizeof(uint8_t));
+
+    #ifdef DEBUG
+        printf("Session keys copied\n");
+    #endif
 
     std::memset(keys.data(), 0, keys.size());
     keys.clear();
+
+    #ifdef DEBUG
+        printf("Session keys cleared\n");
+    #endif
 
     std::vector<uint8_t> serializedEPHKey;
 
@@ -234,6 +264,11 @@ void Worker::initiateProtocol() {
     std::memcpy(EPHKeyBuffer.data() + m1.EPHkeyLength, serializedEPHKey.data(), serializedEPHKey.size());
 
     std::vector<unsigned char> signature;
+    RSASignature* rsa = nullptr;
+
+    #ifdef DEBUG
+        printf("Received EPH key\n");
+    #endif
     
 
 

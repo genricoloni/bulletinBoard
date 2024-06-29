@@ -4,26 +4,57 @@ void SHA512::generateHash(const unsigned char* inputBuffer, size_t inputBufferLe
     
     digest.resize(EVP_MD_size(EVP_sha512()));
 
+    #ifdef DEBUG
+    std::cout << "Digest size: " << digest.size() << std::endl;
+    #endif
+
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 
     if (!mdctx) {
         throw std::runtime_error("Error creating context");
     }
 
+    #ifdef DEBUG
+    std::cout << "Context created" << std::endl;
+    #endif
+
     if(EVP_DigestInit(mdctx, EVP_sha512()) != 1) {
         EVP_MD_CTX_free(mdctx);
         throw std::runtime_error("Error initializing digest");
     }
 
+    #ifdef DEBUG
+    std::cout << "Digest initialized" << std::endl;
+    //print the address of the context
+    std::cout << "Context address: " << mdctx << std::endl;
+    //print the address of the buffer
+    std::cout << "Buffer address: " << *inputBuffer << std::endl;
+    #endif
+
+    try {
     if(EVP_DigestUpdate(mdctx, inputBuffer, inputBufferLength) != 1) {
+        #ifdef DEBUG
+        std::cout << "Error updating digest" << std::endl;
+        #endif
         EVP_MD_CTX_free(mdctx);
         throw std::runtime_error("Error updating digest");
+    }}
+    catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
     }
+
+    #ifdef DEBUG
+    std::cout << "Digest updated" << std::endl;
+    #endif
 
     if(EVP_DigestFinal(mdctx, digest.data(), &digestLength) != 1) {
         EVP_MD_CTX_free(mdctx);
         throw std::runtime_error("Error finalizing digest");
     }
+
+    #ifdef DEBUG
+    std::cout << "Digest finalized" << std::endl;
+    #endif
 
     EVP_MD_CTX_free(mdctx);
 };
