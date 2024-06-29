@@ -14,6 +14,10 @@ BIN_SERVER = server
 # Include directories for header files 
 CPPINCLUDE = -I./src/client -I./src/server -I./src/crypto  # Include crypto directory
 
+ifeq ($(DEBUG), 1)
+  CFLAGS += -DDEBUG
+endif
+
 # Target to build the client executable
 client: src/client/*.cpp src/crypto/*.cpp
 	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_CLIENT) src/client/*.cpp src/crypto/*.cpp -lcrypto
@@ -46,6 +50,7 @@ usage:
 	@echo "  make server: Build the server executable"
 	@echo "  make all: Build both client and server executables"
 	@echo "  make clean: Remove built files"
-	@echo "  make usage: Display this message"
+	@echo "  make DEBUG=1: Build with debug information"
+	@echo "  make: Build without debug information (default)"
 
 .DEFAULT_GOAL := usage

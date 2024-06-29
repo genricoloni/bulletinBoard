@@ -10,22 +10,18 @@
 
 #include "../const.hpp"
 
-struct protocolM1 {
+struct ProtocolM1 {
     uint32_t EPHkeyLength;
     uint8_t EPHKey[EPH_KEY_SIZE];
 
-    protocolM1() {
+    ProtocolM1() : EPHkeyLength(0) {
         memset(EPHKey, 0, EPH_KEY_SIZE);
     }
 
-    protocolM1(std::vector<uint8_t>& ephKey, int keyLength) {
+    ProtocolM1(std::vector<uint8_t>& ephKey, int keyLength) {
         //data sanitization
         if (keyLength > EPH_KEY_SIZE) {
             throw std::invalid_argument("Key length is too large");
-        }
-
-        if (ephKey.size() != keyLength) {
-            throw std::invalid_argument("Key length does not match the key size");
         }
 
         this->EPHkeyLength = keyLength;
@@ -49,8 +45,8 @@ struct protocolM1 {
         return sizeof(EPHkeyLength) + sizeof(EPHKey);
     }
 
-    protocolM1 deserialize(std::vector<uint8_t>& buffer) {
-        protocolM1 m1;
+    static ProtocolM1 deserialize(std::vector<uint8_t>& buffer) {
+        ProtocolM1 m1;
 
         int position = 0;
         uint32_t EPHkeySizeNetwork = 0;
@@ -59,7 +55,7 @@ struct protocolM1 {
         m1.EPHkeyLength = ntohl(EPHkeySizeNetwork);
         position += sizeof(EPHkeySizeNetwork);
 
-        std::memcpy(m1.EPHKey, 0, sizeof(m1.EPHKey));
+        std::memset(m1.EPHKey, 0, sizeof(EPHKey));
         std::memcpy(m1.EPHKey, buffer.data() + position, sizeof(m1.EPHKey));
         position += sizeof(m1.EPHKey) * EPH_KEY_SIZE;
 
@@ -67,7 +63,7 @@ struct protocolM1 {
     }
 };
 
-struct HandshakeM2 {
+struct ProtocolM2 {
 
     std::vector<uint8_t> EPHKey;
     uint32_t EPHKeyLength;
@@ -76,7 +72,7 @@ struct HandshakeM2 {
     std::vector<uint8_t> encryptedSignature;
     uint32_t encryptedSignatureLength;
 
-    HandshakeM2() {
+    ProtocolM2() {
         EPHKeyLength = 0;
         IVLength = 0;
         encryptedSignatureLength = 0;
@@ -96,7 +92,7 @@ struct HandshakeM2 {
         return size;
     }
 
-    HandshakeM2 (std::vector<uint8_t>EPHKey, std::vector<uint8_t>IV, std::vector<uint8_t>encryptedSignature) {
+    ProtocolM2 (std::vector<uint8_t>EPHKey, std::vector<uint8_t>IV, std::vector<uint8_t>encryptedSignature) {
         this->EPHKeyLength = (unsigned int)EPHKey.size();
         this->IVLength = (unsigned int)IV.size();
         this->encryptedSignatureLength = (unsigned int)encryptedSignature.size();
@@ -112,7 +108,7 @@ struct HandshakeM2 {
     }
 
     std::vector<uint8_t> serialize() {
-        std::vector<uint8_t> buffer(HandshakeM2::GetSize());
+        std::vector<uint8_t> buffer(ProtocolM2::GetSize());
         size_t position = 0;
 
         uint32_t EPHKeyLengthNetwork = htonl(this->EPHKeyLength);
@@ -138,9 +134,9 @@ struct HandshakeM2 {
         return buffer;
         }
 
-    static HandshakeM2 deserialize(std::vector<uint8_t> buffer) {
+    static ProtocolM2 deserialize(std::vector<uint8_t> buffer) {
 
-        HandshakeM2 m2;
+        ProtocolM2 m2;
 
         size_t position = 0;
 

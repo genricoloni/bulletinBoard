@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
         case LOGIN_CODE:
             //login
             printf("Login\n");
+            client.initiateProtocol();
             getchar();
             break;
 

@@ -83,7 +83,7 @@ ssize_t Worker::receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize)
     ssize_t receivedBytes = 0;
 
     while (receivedBytes < bufferSize) {
-        ssize_t n = recv(userSocket, buffer.data() + receivedBytes, bufferSize - receivedBytes, 0);
+        ssize_t n = recv(userSocket, &buffer.data()[receivedBytes], bufferSize - receivedBytes, 0);
 
         if (n < 0) 
             throw std::runtime_error("Error reading from socket");
@@ -99,22 +99,50 @@ ssize_t Worker::receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize)
 
 void Worker::initiateProtocol() {
     //allocate space for message M1
-    std::vector<uint8_t> serializedM1(HandshakeM2::GetSize());
+    std::vector<uint8_t> serializedM1(ProtocolM2::GetSize());
 
     try {
-        //receive the message M1
-        receiveMessage(serializedM1, HandshakeM2::GetSize());
+        //receive M1
+        this->receiveMessage(serializedM1, ProtocolM2::GetSize());
     }
-    catch (const std::exception& e) {
+    catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return;
     }
 
-    //deserialize the message M1
-    HandshakeM2 m2 = HandshakeM2::deserialize(serializedM1);
+    //deserialize M1
+    ProtocolM1 m1 = ProtocolM1::deserialize(serializedM1);
 
-    DiffieHellman* dh = nullptr;
-
+    DiffieHellman* dh = new DiffieHellman();
     EVP_PKEY* EPH_KEY = nullptr;
-    EVP_PKEY* PEER_EPH_KEY = nullptr;
-}
+    EVP_PKEY* peerEPHKey = nullptr;
+
+    try{
+        dh = new DiffieHellman();
+
+        //generate EPH key
+        EPH_KEY = dh->generateEPHKey();
+
+        //deserialize peer EPH key
+        peerEPHKey = dh->deserializeKey(m1.EPHKey, m1.EPHkeyLength);
+    } catch (const std::exception &e) {
+        if (dh != nullptr) {
+            delete dh;
+        }
+        if (EPH_KEY != nullptr) {
+            EVP_PKEY_free(EPH_KEY);
+        }
+        if (peerEPHKey != nullptr) {
+            EVP_PKEY_free(peerEPHKey);
+        }
+        throw e;
+    }
+
+    #ifdef DEBUG
+        printf("Received EPH key\n");
+    #endif
+
+    
+
+
+};

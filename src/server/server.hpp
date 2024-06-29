@@ -10,7 +10,6 @@
 
 #include "../const.hpp"
 #include "worker.hpp"
-#include "../crypto/diffieHellman.hpp"
 
 
 class Server {

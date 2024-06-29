@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "../crypto/diffieHellman.hpp"
+#include "../crypto/secureProtocol.hpp"
 
 
 class Client {
@@ -23,7 +24,7 @@ public:
     ~Client();
 
     void connectToServer();
-    void sendToServer(const std::string& message);
+    void sendToServer(const std::vector<uint8_t>& message);
     std::string receiveFromServer();
 
     void initiateProtocol();
