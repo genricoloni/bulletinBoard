@@ -151,7 +151,7 @@ void Worker::initiateProtocol() {
     size_t sharedSecretSize;
 
     try {
-        dh->generateSharedSecret(EPH_KEY, peerEPHKey, sharedSecret);
+        dh->generateSharedSecret(EPH_KEY, peerEPHKey, sharedSecret, sharedSecretSize);
 
         EVP_PKEY_free(peerEPHKey);
 
@@ -181,7 +181,7 @@ void Worker::initiateProtocol() {
     uint32_t keySize;
 
     try {
-        SHA_512::generateKeys(sharedSecret.data(), sharedSecretSize, keys, keySize);
+        SHA512::generateHash(sharedSecret.data(), sharedSecretSize, keys, keySize);
 
         std::memset(sharedSecret.data(), 0, sharedSecret.size());
         sharedSecret.clear();
@@ -201,6 +201,6 @@ void Worker::initiateProtocol() {
         printf("Session keys generated\n");
     #endif
 
-    std::memcpy(this->sessionKey, keys.data(), keys.size()/2 * sizeof(uint8_t));
-    std::memcpy(this->sessionIV, keys.data() + keys.size()/2, HMAC_DIGESTS_SIZE * sizeof(uint8_t));
+    std::memcpy(this->sessionKey.data(), keys.data(), keys.size()/2 * sizeof(uint8_t));
+    std::memcpy(this->hmacKey.data(), keys.data() + keys.size()/2, HMAC_DIGESTS_SIZE * sizeof(uint8_t));
 };

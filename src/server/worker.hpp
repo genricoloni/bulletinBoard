@@ -15,7 +15,7 @@
 #include <condition_variable>
 
 
-
+#include "../crypto/SHA512.hpp"
 #include "../crypto/secureProtocol.hpp"
 #include "../crypto/diffieHellman.hpp"
 
@@ -51,6 +51,9 @@ public:
 private:
 
     job_t* job;
+    std::vector<uint8_t> iv;
+    std::vector<uint8_t> hmacKey;
+    std::vector<uint8_t> sessionKey;
 
 
     int userSocket;

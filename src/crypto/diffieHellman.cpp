@@ -124,7 +124,7 @@ EVP_PKEY *DiffieHellman::generateEPHKey() {
 
 }
 
-void DiffieHellman::generateSharedSecret(EVP_PKEY *privateKey, EVP_PKEY *peerEPHKey, std::vector<unsigned char> &sharedSecret) {
+void DiffieHellman::generateSharedSecret(EVP_PKEY *privateKey, EVP_PKEY *peerEPHKey, std::vector<unsigned char> &sharedSecret, size_t sharedSecretSize) {
     EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(privateKey, NULL);
 
     if (ctx == NULL) {
@@ -143,7 +143,6 @@ void DiffieHellman::generateSharedSecret(EVP_PKEY *privateKey, EVP_PKEY *peerEPH
         EVP_PKEY_CTX_free(ctx);
         exit(1);
     }
-    size_t sharedSecretSize = sharedSecret.size();
     EVP_PKEY_derive(ctx, NULL, &sharedSecretSize);
 
     sharedSecret.resize(int(sharedSecretSize));
