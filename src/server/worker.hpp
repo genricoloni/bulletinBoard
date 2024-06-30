@@ -19,6 +19,7 @@
 #include "../crypto/secureProtocol.hpp"
 #include "../crypto/diffieHellman.hpp"
 #include "../crypto/RSASignature.hpp"
+#include "../crypto/AESCBC.hpp"
 
 /*
     * Job struct
@@ -58,7 +59,9 @@ private:
 
     const std::string serverPrivateKeyPath = "../res/keys/private/server.pem";
 
-
+    ssize_t workerSend(const std::vector<uint8_t>& buffer);
+    ssize_t workerReceive(std::vector<uint8_t>& buffer, ssize_t bufferSize);
+    
 
     int userSocket;
     struct sockaddr_in userAddress;

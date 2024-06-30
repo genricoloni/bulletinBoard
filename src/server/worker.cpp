@@ -100,6 +100,50 @@ ssize_t Worker::receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize)
         return receivedBytes;
 }
 
+ssize_t Worker::workerSend(const std::vector<uint8_t>& buffer) {
+    ssize_t sentBytes = 0;
+    ssize_t bufferSize = buffer.size();
+
+    while (sentBytes < bufferSize) {
+        ssize_t n = send(userSocket, reinterpret_cast<const unsigned char*>(&buffer.data()[sentBytes]), bufferSize - sentBytes, 0);
+
+        if(sentBytes == -1 && (errno == EPIPE || errno == ECONNRESET)) {
+            //connection closed
+            char message[sizeof("Client disconnected (socket: )") + sizeof(int)] = {0};
+            sprintf(message, "Client disconnected (socket: %d)", userSocket);
+            throw std::runtime_error(message);
+        }
+
+        if(sentBytes == -1) {
+            throw std::runtime_error("Error sending message to client");
+        }
+        sentBytes += n;
+    }
+
+    return sentBytes;
+}
+
+ssize_t Worker::workerReceive(std::vector<uint8_t>& buffer, ssize_t bufferSize) {
+    ssize_t receivedBytes = 0;
+
+    while (receivedBytes < bufferSize) {
+        ssize_t n = recv(userSocket, reinterpret_cast<unsigned char*>(&buffer.data()[receivedBytes]), bufferSize - receivedBytes, 0);
+
+        if(receivedBytes == -1)
+            throw std::runtime_error("Error reading from socket");
+
+        if(receivedBytes == 0){
+            char message[sizeof("Client disconnected (socket: )") + sizeof(int)] = {0};
+            sprintf(message, "Client disconnected (socket: %d)", userSocket);
+            throw std::runtime_error(message);
+        }
+
+        receivedBytes += n;
+    }
+    
+    return receivedBytes;
+}
+
 void Worker::initiateProtocol() {
     //allocate space for message M1
     std::vector<uint8_t> serializedM1(ProtocolM1::GetSize());
@@ -293,6 +337,67 @@ void Worker::initiateProtocol() {
 
     std::vector<uint8_t>iv(EVP_CIPHER_iv_length(EVP_aes_256_cbc()));
     std::vector<uint8_t>cipherText;
+
+    AESCBC* enc = nullptr;
+
+    try {
+        enc = new AESCBC(ENCRYPT, sessionKey);
+        enc->run(signature, cipherText, iv);
+
+        delete enc;
+        enc = nullptr;
+
+        std::memset(signature.data(), 0, signature.size());
+        signature.clear();
+    } catch (const std::exception &e) {
+        if (enc != nullptr) 
+            delete enc;
+
+        std::memset(iv.data(), 0, iv.size());
+        iv.clear();
+
+        std::memset(signature.data(), 0, signature.size());
+        signature.clear();
+
+        memset(EPHKeyBuffer.data(), 0, EPHKeyBuffer.size());
+        EPHKeyBuffer.clear();
+
+        std::memset(serializedEPHKey.data(), 0, serializedEPHKey.size());
+        serializedEPHKey.clear();
+
+        throw e;      
+    }
+
+    try {
+        ProtocolM2 m2(serializedEPHKey, iv, cipherText);
+        std::vector<uint8_t> serializedM2 = m2.serialize();
+
+        workerSend(serializedM2);
+
+        std::memset(iv.data(), 0, iv.size());
+        iv.clear();
+
+        std::memset(cipherText.data(), 0, cipherText.size());
+        cipherText.clear();
+
+        std::memset(EPHKeyBuffer.data(), 0, EPHKeyBuffer.size());
+        EPHKeyBuffer.clear();
+    } catch (const std::exception &e) {
+        std::memset(iv.data(), 0, iv.size());
+        iv.clear();
+
+        std::memset(cipherText.data(), 0, cipherText.size());
+        cipherText.clear();
+
+        std::memset(EPHKeyBuffer.data(), 0, EPHKeyBuffer.size());
+        EPHKeyBuffer.clear();
+
+        throw e;
+    }
+
+    #ifdef DEBUG
+        printf("Sent M2 to client %d\n", ntohs(userAddress.sin_port));
+    #endif
     
 
 
