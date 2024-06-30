@@ -56,7 +56,7 @@ private:
     std::vector<uint8_t> hmacKey;
     std::vector<uint8_t> sessionKey;
 
-    const std::string server_private_key_path = "../res/keys/private/server.pem";
+    const std::string serverPrivateKeyPath = "../res/keys/private/server.pem";
 
 
 

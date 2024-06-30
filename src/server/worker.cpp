@@ -269,6 +269,30 @@ void Worker::initiateProtocol() {
     #ifdef DEBUG
         printf("Received EPH key\n");
     #endif
+
+    try {
+        rsa = new RSASignature(serverPrivateKeyPath, "");
+
+        signature = rsa->sign(EPHKeyBuffer);
+
+        delete rsa;
+        rsa = nullptr;
+    } catch (const std::exception &e) {
+        std::memset(EPHKeyBuffer.data(), 0, EPHKeyBuffer.size());
+        EPHKeyBuffer.clear();
+
+        std::memset(serializedEPHKey.data(), 0, serializedEPHKey.size());
+        serializedEPHKey.clear();
+
+        if (rsa != nullptr) {
+            delete rsa;
+        }
+
+        throw e;
+    }
+
+    std::vector<uint8_t>iv(EVP_CIPHER_iv_length(EVP_aes_256_cbc()));
+    std::vector<uint8_t>cipherText;
     
 
 
