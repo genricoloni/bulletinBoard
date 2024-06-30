@@ -25,7 +25,7 @@ public:
 
     void connectToServer();
     void sendToServer(const std::vector<uint8_t>& message);
-    std::string receiveFromServer();
+    void receiveFromServer(std::vector<uint8_t>& message);
 
     void initiateProtocol();
 

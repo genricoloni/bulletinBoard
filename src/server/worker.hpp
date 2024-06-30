@@ -57,7 +57,7 @@ private:
     std::vector<uint8_t> hmacKey;
     std::vector<uint8_t> sessionKey;
 
-    const std::string serverPrivateKeyPath = "../res/keys/private/server.pem";
+    const std::string serverPrivateKeyPath = "res/keys/private/server.pem";
 
     ssize_t workerSend(const std::vector<uint8_t>& buffer);
     ssize_t workerReceive(std::vector<uint8_t>& buffer, ssize_t bufferSize);

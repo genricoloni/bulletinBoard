@@ -315,13 +315,28 @@ void Worker::initiateProtocol() {
     #endif
 
     try {
+        #ifdef DEBUG
+            printf("Preparing signature\n");
+        #endif
+
         rsa = new RSASignature(serverPrivateKeyPath, "");
 
+        #ifdef DEBUG
+            printf("RSA object created\n");
+        #endif
+
         signature = rsa->sign(EPHKeyBuffer);
+
+        #ifdef DEBUG
+            printf("Signed\n");
+        #endif
 
         delete rsa;
         rsa = nullptr;
     } catch (const std::exception &e) {
+        #ifdef DEBUG
+            std::cerr << e.what() << std::endl;
+        #endif
         std::memset(EPHKeyBuffer.data(), 0, EPHKeyBuffer.size());
         EPHKeyBuffer.clear();
 
@@ -334,6 +349,10 @@ void Worker::initiateProtocol() {
 
         throw e;
     }
+
+    #ifdef DEBUG
+        printf("Signature generated\n");
+    #endif
 
     std::vector<uint8_t>iv(EVP_CIPHER_iv_length(EVP_aes_256_cbc()));
     std::vector<uint8_t>cipherText;
@@ -367,6 +386,10 @@ void Worker::initiateProtocol() {
 
         throw e;      
     }
+
+    #ifdef DEBUG
+        printf("Signature encrypted\n");
+    #endif
 
     try {
         ProtocolM2 m2(serializedEPHKey, iv, cipherText);

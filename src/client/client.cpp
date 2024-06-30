@@ -57,6 +57,28 @@ void Client::sendToServer(const std::vector<uint8_t>& message) {
     }
 }
 
+void Client::receiveFromServer(std::vector<uint8_t>& message) {
+    ssize_t byteReceived = 0;
+    ssize_t totalByteReceived = 0;
+    ssize_t messageLength = message.size();
+
+    while (totalByteReceived < messageLength) {
+        byteReceived = recv(socket, message.data() + totalByteReceived, messageLength - totalByteReceived, 0);
+        
+        if(byteReceived != -1 && byteReceived != 0)
+            totalByteReceived += byteReceived;
+        
+
+        if(byteReceived == 0)
+            throw std::runtime_error("Connection closed by server");
+        }
+        
+        if (byteReceived == -1) {
+            throw std::runtime_error("Error receiving message from server");
+        }
+    }
+
+
 void Client::initiateProtocol() {
     #ifdef DEBUG
     printf("Initiating communication to create secure connection\n");
@@ -131,6 +153,66 @@ void Client::initiateProtocol() {
     printf("M1 sent\n");
     #endif
 
+    std::vector<uint8_t> serializedM2(ProtocolM2::GetSize());
+
+    try {
+        receiveFromServer(serializedM2);
+    } catch(const std::exception &e) {
+        #ifdef DEBUG
+            std::cerr << e.what() << std::endl;
+        #endif
+
+        std::memset(serializedEPHKey.data(), 0, serializedEPHKey.size());
+        serializedEPHKey.clear();
+
+        EVP_PKEY_free(EPH_KEY);
+
+        std::memset(serializedM1.data(), 0, serializedM1.size());
+        serializedM1.clear();
+
+        std::memset(serializedM2.data(), 0, serializedM2.size());
+        serializedM2.clear();
+
+        throw std::runtime_error("Error receiving message from server");
+    }
+
+    ProtocolM2 m2 = ProtocolM2::deserialize(serializedM2);
+    serializedM2.clear();
+
+    EVP_PKEY *serverEPHKey = nullptr;
+    std::vector<uint8_t> sharedSecret;
+    ssize_t sharedSecretSize ;
+
+    try {
+        serverEPHKey = DiffieHellman::deserializeKey(m2.EPHKey.data(), m2.EPHKeyLength);
+
+        dh.generateSharedSecret(EPH_KEY, serverEPHKey, sharedSecret, sharedSecretSize);
+    } catch (const std::exception &e) {
+        #ifdef DEBUG
+        std::cerr << e.what() << std::endl;
+        #endif
+
+        if (serverEPHKey != nullptr) {
+            EVP_PKEY_free(serverEPHKey);
+        }
+
+        std::memset(serializedEPHKey.data(), 0, serializedEPHKey.size());
+        serializedEPHKey.clear();
+
+        EVP_PKEY_free(EPH_KEY);
+
+        std::memset(sharedSecret.data(), 0, sharedSecret.size());
+        sharedSecret.clear();
+
+        if(serverEPHKey != nullptr) 
+            EVP_PKEY_free(serverEPHKey);
+        
+        throw std::runtime_error("Error generating shared secret");
+    }
+
+    #ifdef DEBUG
+    printf("Shared secret generated\n");
+    #endif
 
 
 
