@@ -75,3 +75,31 @@ std::vector<unsigned char> RSASignature::sign(const std::vector<unsigned char>& 
 
     return signature;
 }
+
+bool RSASignature::verify(const std::vector<unsigned char>& message, const std::vector<unsigned char>& signature) {
+    if(!mPublicKey) {
+        throw std::runtime_error("Public key not loaded");
+    }
+
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    EVP_PKEY* publicKey = mPublicKey;
+
+    if(EVP_DigestVerifyInit(ctx, NULL, EVP_sha256(), NULL, publicKey) != 1) {
+        EVP_MD_CTX_free(ctx);
+        EVP_PKEY_free(publicKey);
+        throw std::runtime_error("Error initializing verification");
+    }
+
+    if(EVP_DigestVerifyUpdate(ctx, message.data(), message.size()) != 1) {
+        EVP_MD_CTX_free(ctx);
+        EVP_PKEY_free(publicKey);
+        throw std::runtime_error("Error updating verification");
+    }
+
+    int result = EVP_DigestVerifyFinal(ctx, signature.data(), signature.size());
+
+    EVP_MD_CTX_free(ctx);
+    EVP_PKEY_free(publicKey);
+
+    return result == 1;
+}

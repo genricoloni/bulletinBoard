@@ -28,7 +28,7 @@ void SHA512::generateHash(const unsigned char* inputBuffer, size_t inputBufferLe
     //print the address of the context
     std::cout << "Context address: " << mdctx << std::endl;
     //print the address of the buffer
-    std::cout << "Buffer address: " << *inputBuffer << std::endl;
+    printf("Buffer address: %p\n", inputBuffer);
     #endif
 
     try {
@@ -41,6 +41,10 @@ void SHA512::generateHash(const unsigned char* inputBuffer, size_t inputBufferLe
     }}
     catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
+        #ifdef DEBUG
+        std::cout << "Error: " << e.what() << std::endl;
+        #endif
+        throw e;
     }
 
     #ifdef DEBUG
