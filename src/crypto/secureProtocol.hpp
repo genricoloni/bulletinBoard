@@ -169,3 +169,79 @@ struct ProtocolM2 {
         return m2;
     }
 };
+
+struct MessageM3 {
+    uint32_t iv_length;
+    std::vector<uint8_t> iv;
+    uint32_t encSignatureSize;
+    std::vector<uint8_t> encSignature;
+
+    MessageM3() : iv_length(0), encSignatureSize(0) {}
+
+    MessageM3(std::vector<uint8_t> iv, std::vector<uint8_t> encSignature) {
+        this->iv_length = iv.size();
+        this->iv.resize(this->iv_length);
+        std::memcpy(this->iv.data(), iv.data(), this->iv_length);
+
+        this->encSignatureSize = encSignature.size();
+        this->encSignature.resize(this->encSignatureSize);
+        std::memcpy(this->encSignature.data(), encSignature.data(), this->encSignatureSize);
+    }
+
+    static int GetSize() {
+        int size = 0;
+
+        size += sizeof(uint32_t);
+        size += AES_BLOCK_SIZE * sizeof(uint8_t);
+        size += sizeof(uint32_t);
+        size += ENCRYPTED_SIGNATURE_SIZE * sizeof(uint8_t);
+
+        return size;
+    }
+
+    std::vector<uint8_t> serialize() const{
+        std::vector<uint8_t> buffer(MessageM3::GetSize());
+        size_t position = 0;
+
+        uint32_t iv_length_network = htonl(this->iv_length);
+        std::memcpy(buffer.data(), &iv_length_network, sizeof(iv_length_network));
+        position += sizeof(iv_length_network);
+
+        std::memcpy(buffer.data() + position, this->iv.data(), this->iv_length);
+        position += this->iv_length;
+
+        uint32_t encSignatureSizeNetwork = htonl(this->encSignatureSize);
+        std::memcpy(buffer.data() + position, &encSignatureSizeNetwork, sizeof(encSignatureSizeNetwork));
+        position += sizeof(encSignatureSizeNetwork);
+
+        std::memcpy(buffer.data() + position, this->encSignature.data(), this->encSignatureSize);
+
+        return buffer;
+    }
+
+    static MessageM3 deserialize(std::vector<uint8_t> buffer) {
+        MessageM3 m3;
+
+        size_t position = 0;
+
+        uint32_t iv_length_network = 0;
+        std::memcpy(&iv_length_network, buffer.data(), sizeof(iv_length_network));
+        m3.iv_length = ntohl(iv_length_network);
+        position += sizeof(iv_length_network);
+
+        m3.iv.resize(m3.iv_length);
+        std::memcpy(m3.iv.data(), buffer.data() + position, m3.iv_length);
+        position += m3.iv_length;
+
+        uint32_t encSignatureSizeNetwork = 0;
+        std::memcpy(&encSignatureSizeNetwork, buffer.data() + position, sizeof(encSignatureSizeNetwork));
+        m3.encSignatureSize = ntohl(encSignatureSizeNetwork);
+        position += sizeof(encSignatureSizeNetwork);
+
+        m3.encSignature.resize(m3.encSignatureSize);
+        std::memcpy(m3.encSignature.data(), buffer.data() + position, m3.encSignatureSize);
+
+        return m3;
+    }
+        
+};
