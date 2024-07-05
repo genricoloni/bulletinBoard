@@ -422,6 +422,34 @@ void Worker::initiateProtocol() {
         printf("Sent M2 to client %d\n", ntohs(userAddress.sin_port));
     #endif
     
+    std::vector<uint8_t> serializedM3(ProtocolM3::GetSize());
 
+    try{
+        this->receiveMessage(serializedM3, ProtocolM3::GetSize());
+    }
+    catch(const std::exception &e){
+        std::cerr << e.what() << '\n';
+        EPHKeyBuffer.clear();
+        std::memset(EPHKeyBuffer.data(), 0, EPHKeyBuffer.size());
+        throw std::runtime_error("Error receiving message from client");
+    }
+
+    #ifdef DEBUG
+        printf("Received M3 from client %d\n", ntohs(userAddress.sin_port));
+    #endif
+
+    try {
+        ProtocolM3 m3 = ProtocolM3::deserialize(serializedM3);
+
+        if (m3.mode == LOGIN_CODE) {
+            //login
+            if (!login()) {
+                throw std::runtime_error("Login failed");
+            }
+        } 
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        throw std::runtime_error("Error handling client request");
+    }
 
 };

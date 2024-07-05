@@ -20,6 +20,7 @@
 #include "../crypto/diffieHellman.hpp"
 #include "../crypto/RSASignature.hpp"
 #include "../crypto/AESCBC.hpp"
+#include "../const.hpp"
 
 /*
     * Job struct

@@ -82,7 +82,7 @@ void Client::receiveFromServer(std::vector<uint8_t>& message) {
     }
 
 
-void Client::initiateProtocol() {
+void Client::initiateProtocol(uint32_t mode) {
     #ifdef DEBUG
     printf("Initiating communication to create secure connection\n");
     #endif
@@ -413,5 +413,49 @@ void Client::initiateProtocol() {
     }
 
 
+    ProtocolM3 m3(iv, encryptedSignature, mode);
+
+    std::vector<uint8_t> serializedM3 = m3.serialize();
+
+    try{
+        sendToServer(serializedM3);
+
+        std::memset(iv.data(), 0, iv.size());
+        iv.clear();
+
+        std::memset(encryptedSignature.data(), 0, encryptedSignature.size());
+        encryptedSignature.clear();
+    } catch (const std::exception &e) {
+        #ifdef DEBUG
+        std::cerr << e.what() << std::endl;
+        #endif
+
+        std::memset(serializedM3.data(), 0, serializedM3.size());
+        serializedM3.clear();
+
+        throw std::runtime_error("Error serializing M3");
+    }
+    
+    #ifdef DEBUG
+    printf("M3 sent\n");
+    #endif
+
+    if(mode == LOGIN_CODE){
+        //call the login function
+        login();
+    } else if(mode == REGISTER_CODE){
+        //call the register function
+        registerUser();
+    }
+    
 };
 
+bool Client::login(){
+    #ifdef DEBUG
+    printf("Login function\n");
+    #endif
+
+    bool success = false;
+
+    
+}

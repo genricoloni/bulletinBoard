@@ -170,15 +170,16 @@ struct ProtocolM2 {
     }
 };
 
-struct MessageM3 {
+struct ProtocolM3 {
     uint32_t iv_length;
     std::vector<uint8_t> iv;
     uint32_t encSignatureSize;
     std::vector<uint8_t> encSignature;
+    uint32_t mode;
 
-    MessageM3() : iv_length(0), encSignatureSize(0) {}
+    ProtocolM3() : iv_length(0), encSignatureSize(0) {}
 
-    MessageM3(std::vector<uint8_t> iv, std::vector<uint8_t> encSignature) {
+    ProtocolM3(std::vector<uint8_t> iv, std::vector<uint8_t> encSignature, uint32_t mode) {
         this->iv_length = iv.size();
         this->iv.resize(this->iv_length);
         std::memcpy(this->iv.data(), iv.data(), this->iv_length);
@@ -186,6 +187,8 @@ struct MessageM3 {
         this->encSignatureSize = encSignature.size();
         this->encSignature.resize(this->encSignatureSize);
         std::memcpy(this->encSignature.data(), encSignature.data(), this->encSignatureSize);
+
+        this->mode = mode;
     }
 
     static int GetSize() {
@@ -195,12 +198,13 @@ struct MessageM3 {
         size += AES_BLOCK_SIZE * sizeof(uint8_t);
         size += sizeof(uint32_t);
         size += ENCRYPTED_SIGNATURE_SIZE * sizeof(uint8_t);
+        size += sizeof(uint32_t);
 
         return size;
     }
 
     std::vector<uint8_t> serialize() const{
-        std::vector<uint8_t> buffer(MessageM3::GetSize());
+        std::vector<uint8_t> buffer(ProtocolM3::GetSize());
         size_t position = 0;
 
         uint32_t iv_length_network = htonl(this->iv_length);
@@ -215,12 +219,16 @@ struct MessageM3 {
         position += sizeof(encSignatureSizeNetwork);
 
         std::memcpy(buffer.data() + position, this->encSignature.data(), this->encSignatureSize);
+        position += this->encSignatureSize;
+
+        uint32_t modeNetwork = htonl(this->mode);
+        std::memcpy(buffer.data() + position, &modeNetwork, sizeof(modeNetwork));
 
         return buffer;
     }
 
-    static MessageM3 deserialize(std::vector<uint8_t> buffer) {
-        MessageM3 m3;
+    static ProtocolM3 deserialize(std::vector<uint8_t> buffer) {
+        ProtocolM3 m3;
 
         size_t position = 0;
 
@@ -240,7 +248,12 @@ struct MessageM3 {
 
         m3.encSignature.resize(m3.encSignatureSize);
         std::memcpy(m3.encSignature.data(), buffer.data() + position, m3.encSignatureSize);
+        position += m3.encSignatureSize;
 
+        uint32_t mode = 0;
+        std::memcpy(&mode, buffer.data() + position, sizeof(mode));
+        m3.mode = ntohl(mode);
+                
         return m3;
     }
         
