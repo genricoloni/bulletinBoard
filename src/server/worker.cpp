@@ -262,7 +262,7 @@ void Worker::initiateProtocol() {
 
     #endif
 
-    std::memcpy(this->sessionKey.data(), keys.data(), keys.size()/2 * sizeof(uint8_t));
+    std::memcpy(this->sessionKey.data(), keys.data(), (keys.size()/2) * sizeof(uint8_t));
 
     #ifdef DEBUG
         printf("Session keys copied 1\n");
@@ -310,29 +310,29 @@ void Worker::initiateProtocol() {
     std::vector<unsigned char> signature;
     RSASignature* rsa = nullptr;
 
-    #ifdef DEBUG
-        printf("Received EPH key\n");
-    #endif
-
     try {
-        #ifdef DEBUG
-            printf("Preparing signature\n");
-        #endif
-
         rsa = new RSASignature(serverPrivateKeyPath, "");
-
-        #ifdef DEBUG
-            printf("RSA object created\n");
-        #endif
 
         signature = rsa->sign(EPHKeyBuffer);
 
-        #ifdef DEBUG
-            printf("Signed\n");
-        #endif
-
         delete rsa;
         rsa = nullptr;
+
+        #ifdef DEBUG
+            printf("Signed\n");
+        printf("Verifying signature...\n");
+
+        rsa = new RSASignature("", "res/keys/public/server.pem");
+
+        if (!rsa->verify(EPHKeyBuffer, signature)) {
+            printf("Signature verification failed\n");
+            throw std::runtime_error("Signature verification failed");
+        } else {
+            printf("Signature verified\n");
+        }
+        #endif
+
+
     } catch (const std::exception &e) {
         #ifdef DEBUG
             std::cerr << e.what() << std::endl;

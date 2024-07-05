@@ -43,7 +43,7 @@ std::vector<unsigned char> RSASignature::sign(const std::vector<unsigned char>& 
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
     EVP_PKEY* privateKey = mPrivateKey;
 
-    if(EVP_DigestSignInit(ctx, NULL, EVP_sha256(), NULL, privateKey) != 1) {
+    if(EVP_DigestSignInit(ctx, nullptr, EVP_sha256(), nullptr, privateKey) != 1) {
         EVP_MD_CTX_free(ctx);
         EVP_PKEY_free(privateKey);
         throw std::runtime_error("Error initializing signature");

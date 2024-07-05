@@ -128,12 +128,17 @@ void AESCBC::finalizeDecrypt() {
 }
 
 void AESCBC::run(const std::vector<uint8_t>& input, std::vector<uint8_t>& output, std::vector<uint8_t>& iv) {
-    if(type == ENCRYPT) {
-        plaintext.resize(input.size());
-        std::copy(input.begin(), input.end(), plaintext.begin());
+    if(this->type == ENCRYPT) {
+        this->plaintext.resize(input.size());
+
+        std::copy(input.begin(), input.end(), this->plaintext.begin());
+
         initializeEncrypt();
+        std::copy(this->iv.begin(), this->iv.end(), iv.begin());
+
         updateEncrypt();
         finalizeEncrypt();
+        
         output.resize(this->ciphertext.size());
         std::copy(this->ciphertext.begin(), this->ciphertext.end(), output.begin());
         output.shrink_to_fit();

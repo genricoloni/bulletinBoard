@@ -226,7 +226,7 @@ void Client::initiateProtocol() {
     uint32_t keySize;
 
     try {
-        SHA512::generateHash(reinterpret_cast<const unsigned char*>(sharedSecret.data()), sharedSecret.size(), keys, keySize);
+        SHA512::generateHash(sharedSecret.data(), sharedSecret.size(), keys, keySize);
         std::memset(sharedSecret.data(), 0, sharedSecret.size());
         sharedSecret.clear();
     } catch (const std::exception &e) {
@@ -406,6 +406,10 @@ void Client::initiateProtocol() {
 
     if (!verified) {
         throw std::runtime_error("Signature not verified");
+    } else {
+        #ifdef DEBUG
+        printf("Signature verified\n");
+        #endif
     }
 
 
