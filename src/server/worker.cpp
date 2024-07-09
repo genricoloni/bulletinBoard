@@ -447,6 +447,12 @@ void Worker::initiateProtocol() {
                 throw std::runtime_error("Login failed");
             }
         } 
+        if (m3.mode == REGISTER_CODE) {
+            //register
+            if (!registerUser()) {
+                throw std::runtime_error("Register failed");
+            }
+        }
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         throw std::runtime_error("Error handling client request");
@@ -456,4 +462,147 @@ void Worker::initiateProtocol() {
 
 bool Worker::login() {
     return true;
+}
+
+bool Worker::registerUser() {
+    bool success = false;
+    //receive message with username and email
+    std::vector<uint8_t> serializedM4Reg_Usr(ProtocolM4Reg_Usr::GetSize());
+
+    try {
+        this->receiveMessage(serializedM4Reg_Usr, ProtocolM4Reg_Usr::GetSize());
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+
+    #ifdef DEBUG
+        printf("Received M4 from client %d\n", ntohs(userAddress.sin_port));
+    #endif
+
+    //deserialize message
+    ProtocolM4Reg_Usr m4Reg_Usr = ProtocolM4Reg_Usr::deserialize(serializedM4Reg_Usr);
+
+    #ifdef DEBUG
+        printf("Deserialized M4\n");
+        printf("Username: %s\n", m4Reg_Usr.username.c_str());
+        printf("Email: %s\n", m4Reg_Usr.email.c_str());
+    #endif
+
+    //check if username is already in use
+    if (checkUsername(m4Reg_Usr.username)) {
+        #ifdef DEBUG
+            printf("Username already in use\n");
+        #endif
+
+        ProtocolM4Response response(USR_ALREADY_TAKEN);
+        std::vector<uint8_t> serializedResponse = response.serialize();
+
+        try {
+            workerSend(serializedResponse);
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+
+
+        return false;
+    }
+
+    #ifdef DEBUG
+        printf("Username not in use\n");
+    #endif
+
+    //check if email is already in use
+    if (checkEmail(m4Reg_Usr.email)) {
+        #ifdef DEBUG
+            printf("Email already in use\n");
+        #endif
+
+        ProtocolM4Response response(MAIL_ALREADY_TAKEN);
+        std::vector<uint8_t> serializedResponse = response.serialize();
+        
+        try {
+            workerSend(serializedResponse);
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+        
+        return false;
+    }
+
+    #ifdef DEBUG
+        printf("Email not in use\n");
+    #endif
+
+    //send response to client
+    ProtocolM4Response response(ACK);
+
+    std::vector<uint8_t> serializedResponse = response.serialize();
+
+    try {
+        workerSend(serializedResponse);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+    
+
+
+
+    return true;
+
+}
+
+bool Worker::checkUsername(const std::string& username) {
+    //open the file
+    std::ifstream file("res/users/users.txt");
+
+    if (!file.is_open()) {
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        //split the line until the first ,
+        std::string delimiter = ",";
+        std::string user = line.substr(0, line.find(delimiter));
+
+        if (user == username) {
+            file.close();
+            return true;
+        }
+    }
+
+    file.close();
+    return false;
+}
+
+bool Worker::checkEmail(const std::string& email) {
+    //open the file
+    std::ifstream file("res/users/users.txt");
+
+    if (!file.is_open()) {
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        //split the line until the first ,
+        std::string delimiter = ",";
+        std::string user = line.substr(0, line.find(delimiter));
+
+        //split the line until the second ,
+        line = line.substr(line.find(delimiter) + 1);
+        std::string mail = line.substr(0, line.find(delimiter));
+
+        if (mail == email) {
+            file.close();
+            return true;
+        }
+    }
+
+    file.close();
+    return false;
 }

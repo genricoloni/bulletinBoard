@@ -1,19 +1,18 @@
 #include <vector>
 #include <cstring>
 #include <openssl/hmac.h>
-#include <stdexcept>
 
-#include "../const.hpp"
+#define HMAC_DIGEST_SIZE 32
 
-class HMAC {
-    unsigned char* mKey;
+class HMac {
+
+    unsigned char* m_key;
 
 public:
-    HMAC(const unsigned char* key);
-    HMAC(const HMAC&) = delete;
-    ~HMAC();
+    HMac(const unsigned char* key);
+    HMac(const HMac&) = delete;
+    ~HMac();
 
-    void generateHMAC(const unsigned char* inputBuffer, size_t inputBufferLength, std::vector<uint8_t>& digest, unsigned int& digestLength);
-    bool verifyHMAC(const unsigned char* inputBuffer, size_t inputBufferLength, std::vector<unsigned char>& digest);
+    void generate(unsigned char* input_buffer, size_t input_buffer_size, std::vector<unsigned char>& digest, unsigned int& digest_size);
+    bool verify(unsigned char* input_buffer, size_t input_buffer_size, std::vector<unsigned char>& input_digest);
 };
-

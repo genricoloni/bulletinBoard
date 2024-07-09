@@ -16,8 +16,8 @@
 #include "../crypto/diffieHellman.hpp"
 #include "../crypto/secureProtocol.hpp"
 #include "../crypto/RSASignature.hpp"
-#include "../crypto/AESCBC.hpp"
 #include "../crypto/SHA512.hpp"
+#include "../crypto/sessionMessage.hpp"
 
 
 class Client {
@@ -47,12 +47,17 @@ private:
 
     std::string username;
 
+
     uint32_t counter; 
     std::vector<uint8_t> hmacKey;
     std::vector<uint8_t> sessionKey;
 
     void turnOnEcho();
     void turnOffEcho();
+
+    void HashPassword(const std::string& password, std::vector<uint8_t>& hashedPassword);
+    void sendPassword(std::string password);
+    void IncrementCounter();
 
 
 };

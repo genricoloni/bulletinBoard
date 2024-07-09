@@ -505,35 +505,115 @@ bool Client::registerUser(){
     memset(this->username.data(), 0, this->username.size());
     this->username = std::string(username);
 
+    //get the mail
+    printf("Insert mail: ");
+    std::cin >> mail;
+    getchar();
+
+    #ifdef DEBUG
+    printf("Username and mail inserted\n"); 
+    printf("Username: %s\n", username.c_str());
+    printf("Mail: %s\n", mail.c_str());
+    #endif
+
+    //prepare the message
+    ProtocolM4Reg_Usr m4(username, mail);
+
+    std::vector<uint8_t> serializedM4;
+    serializedM4 = m4.serialize();
+
+    try {
+        sendToServer(serializedM4);
+        #ifdef DEBUG
+        printf("M4 sent\n");
+        #endif
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(serializedM4.data(), 0, serializedM4.size());
+        serializedM4.clear();
+
+        throw std::runtime_error("Error sending message to server");
+    }
+
+    #ifdef DEBUG
+    //try to deserialize the message m4 and print the content
+    ProtocolM4Reg_Usr m4_1 = ProtocolM4Reg_Usr::deserialize(serializedM4);
+    printf("M4 deserialized\n");
+    printf("Username: %s\n", m4_1.username.c_str());
+    printf("Mail: %s\n", m4_1.email.c_str());
+    #endif
+
+    //receive the message from the server
+    std::vector<uint8_t> serializedM4Response(ProtocolM4Response::GetSize());
+
+    try {
+        receiveFromServer(serializedM4Response);
+        #ifdef DEBUG
+        printf("M4 response received\n");
+        #endif
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(serializedM4Response.data(), 0, serializedM4Response.size());
+        serializedM4Response.clear();
+
+        throw std::runtime_error("Error receiving message from server");
+    }
+
+    ProtocolM4Response m4Response = ProtocolM4Response::deserialize(serializedM4Response);
+    std::memset(serializedM4Response.data(), 0, serializedM4Response.size());
+
+    if (m4Response.response == USR_ALREADY_TAKEN) {
+        std::cerr << "Username already taken" << std::endl;
+        return success;
+    }
+
+    if (m4Response.response == MAIL_ALREADY_TAKEN) {
+        std::cerr << "Mail already taken" << std::endl;
+        return success;
+    }
+
     //get the password
-    printf("Insert password: ");
     char ch;
+    printf("Insert password: ");
     turnOffEcho();
-    
     do {
         ch = getchar();
-        if (ch == 127){
-            if(!password.empty()){
+        if (ch == 127) {
+            if (!password.empty()) {
                 password.pop_back();
                 std::cout << "\b \b";
             }
-        } else if (ch != '\n'){
+        } else {
             password += ch;
             std::cout << "*";
         }
     } while (ch != '\n' && ch != '\r' && password.size() < PASSWORD_MAX_SIZE);
-    turnOnEcho();
 
-    #ifdef DEBUG
-    printf("User: %s\n", username.c_str());
-    printf("Password: %s\n", password.c_str());
-    #endif
 
-    getchar();
-    
 
 
 
 
     return success;
+}
+
+void Client::sendPassword(std::string password) {
+    IncrementCounter();
+
+    PasswordMessage message(password.c_str(), this->counter);
+
+    std::vector<uint8_t> serializedMessage(PWD_MESSAGE1_SIZE);
+    message.serialize(serializedMessage);
+
+    
+
+
+
+}
+
+void Client::IncrementCounter() {
+    if (this->counter + 1 == 0)
+        throw std::runtime_error("\033[1;31m[ERROR]\033[0m Please, try to attempt the login procedure again...");
+
+    this->counter++;
 }

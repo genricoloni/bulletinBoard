@@ -1,49 +1,37 @@
 #include "HMAC.hpp"
 
-HMAC::HMAC(const unsigned char* key) {
-    mKey = new unsigned char[HMAC_DIGEST_SIZE];
-    memcpy(mKey, key, HMAC_DIGEST_SIZE);
+
+HMac::HMac(const unsigned char* key) 
+{
+    m_key = new unsigned char[HMAC_DIGEST_SIZE];
+    memcpy(m_key, key, HMAC_DIGEST_SIZE);
 }
 
-HMAC::~HMAC() {
-    memset(mKey, 0, HMAC_DIGEST_SIZE);
-    delete[] mKey;
+HMac::~HMac() 
+{
+    memset(m_key, 0, HMAC_DIGEST_SIZE);
+    delete[] m_key;
 }
 
-void HMAC::generateHMAC(const unsigned char* inputBuffer, size_t inputBufferLength, std::vector<uint8_t>& digest, unsigned int& digestLength) {
+void HMac::generate(unsigned char* input_buffer, size_t input_buffer_size, std::vector<unsigned char>& digest, unsigned int& digest_size) 
+{    
     digest.resize(EVP_MD_size(EVP_sha256()));
-    HMAC_CTX *ctx = HMAC_CTX_new();
+    HMAC_CTX* ctx = HMAC_CTX_new();
 
-    if(!ctx) {
-        throw std::runtime_error("Error creating context");
-    }
-
-    if(HMAC_Init_ex(ctx, mKey, HMAC_DIGEST_SIZE, EVP_sha256(), NULL) != 1) {
-        HMAC_CTX_free(ctx);
-        throw std::runtime_error("Error initializing HMAC");
-    }
-
-    if(HMAC_Update(ctx, inputBuffer, inputBufferLength) != 1) {
-        HMAC_CTX_free(ctx);
-        throw std::runtime_error("Error updating HMAC");
-    }
-
-    if(HMAC_Final(ctx, digest.data(), &digestLength) != 1) {
-        HMAC_CTX_free(ctx);
-        throw std::runtime_error("Error finalizing HMAC");
-    }
+    HMAC_Init_ex(ctx, m_key, HMAC_DIGEST_SIZE, EVP_sha256(), nullptr);
+    HMAC_Update(ctx, input_buffer, input_buffer_size);
+    HMAC_Final(ctx, digest.data(), &digest_size);    
 
     HMAC_CTX_free(ctx);
 }
 
-bool HMAC::verifyHMAC(const unsigned char* inputBuffer, size_t inputBufferLength, std::vector<unsigned char>& digest) {
-    std::vector<uint8_t> generatedDigest;
-    unsigned int digestLength;
+bool HMac::verify(unsigned char* input_buffer, size_t input_buffer_size, std::vector<unsigned char>& input_digest) 
+{
+    std::vector<unsigned char> generated_digest;
+    unsigned int generated_digest_size = 0;
 
-    try{
-        HMAC::generateHMAC(inputBuffer, inputBufferLength, generatedDigest, digestLength);
-        return CRYPTO_memcmp(digest.data(), generatedDigest.data(), EVP_MD_size(EVP_sha256())) == 0;
-    } catch(...) {
-        throw;
-    }
+    generate(input_buffer, input_buffer_size, generated_digest, generated_digest_size);
+    bool res = CRYPTO_memcmp(input_digest.data(), generated_digest.data(), EVP_MD_size(EVP_sha256())) == 0;
+
+    return res;
 }

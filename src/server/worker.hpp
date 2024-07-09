@@ -74,5 +74,9 @@ private:
     ssize_t receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize);
 
     bool login();
+    bool registerUser();
+
+    bool checkUsername(const std::string& username);
+    bool checkEmail(const std::string& email);
 
 };

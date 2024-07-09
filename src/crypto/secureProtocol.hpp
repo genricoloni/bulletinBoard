@@ -258,3 +258,146 @@ struct ProtocolM3 {
     }
         
 };
+struct ProtocolM4Reg_Usr {
+    // this struct only contains username and email for the registration
+    uint32_t userSize;
+    std::string username;
+    uint32_t emailSize;
+    std::string email;
+
+    // Constructor with default sizes for username and email
+    ProtocolM4Reg_Usr() : username(USER_MAX_SIZE, '\0'), email(MAIL_MAX_SIZE, '\0') {}
+
+    ProtocolM4Reg_Usr(std::string username, std::string email) {
+        this->username = username;
+        this->email = email;
+        this->userSize = username.size();
+        this->emailSize = email.size();
+    }
+
+    static int GetSize() {
+        return sizeof(uint32_t) + USER_MAX_SIZE + sizeof(uint32_t) + MAIL_MAX_SIZE;
+    }
+
+    std::vector<uint8_t> serialize() {
+        std::vector<uint8_t> buffer(ProtocolM4Reg_Usr::GetSize());
+        size_t position = 0;
+
+        uint32_t userSizeNetwork = htonl(this->userSize);
+        std::memcpy(buffer.data(), &userSizeNetwork, sizeof(userSizeNetwork));
+        position += sizeof(userSizeNetwork);
+
+        std::memcpy(buffer.data() + position, this->username.c_str(), this->userSize);
+        position += this->userSize;
+
+        uint32_t emailSizeNetwork = htonl(this->emailSize);
+        std::memcpy(buffer.data() + position, &emailSizeNetwork, sizeof(emailSizeNetwork));
+        position += sizeof(emailSizeNetwork);
+
+        std::memcpy(buffer.data() + position, this->email.c_str(), this->emailSize);
+
+        return buffer;
+    }
+
+    static ProtocolM4Reg_Usr deserialize(std::vector<uint8_t> buffer) {
+        ProtocolM4Reg_Usr m4;
+
+        size_t position = 0;
+
+        uint32_t userSizeNetwork = 0;
+        std::memcpy(&userSizeNetwork, buffer.data(), sizeof(userSizeNetwork));
+        m4.userSize = ntohl(userSizeNetwork);
+        position += sizeof(userSizeNetwork);
+
+        m4.username.resize(m4.userSize);
+        std::memcpy(&m4.username[0], buffer.data() + position, m4.userSize);
+        position += m4.userSize;
+
+        uint32_t emailSizeNetwork = 0;
+        std::memcpy(&emailSizeNetwork, buffer.data() + position, sizeof(emailSizeNetwork));
+        m4.emailSize = ntohl(emailSizeNetwork);
+        position += sizeof(emailSizeNetwork);
+
+        m4.email.resize(m4.emailSize);
+        std::memcpy(&m4.email[0], buffer.data() + position, m4.emailSize);
+
+        return m4;
+    }
+};
+
+
+
+struct ProtocolM4Response{
+    uint32_t response;
+
+    ProtocolM4Response() : response(0) {}
+
+    ProtocolM4Response(uint32_t response) : response(response) {}
+
+    static int GetSize() {
+        return sizeof(uint32_t);
+    }
+
+    std::vector<uint8_t> serialize() {
+        std::vector<uint8_t> buffer(ProtocolM4Response::GetSize());
+        size_t position = 0;
+
+        uint32_t responseNetwork = htonl(this->response);
+        std::memcpy(buffer.data(), &responseNetwork, sizeof(responseNetwork));
+
+        return buffer;
+    }
+
+    static ProtocolM4Response deserialize(std::vector<uint8_t> buffer) {
+        ProtocolM4Response m4;
+
+        size_t position = 0;
+
+        uint32_t responseNetwork = 0;
+        std::memcpy(&responseNetwork, buffer.data(), sizeof(responseNetwork));
+        m4.response = ntohl(responseNetwork);
+
+        return m4;
+    }
+
+};
+
+struct PasswordMessage {
+    uint8_t password[PASSWORD_MAX_SIZE];
+    uint32_t counter;
+
+    PasswordMessage() {}
+
+    PasswordMessage(const char* password, uint32_t counter) 
+    {
+        memset(this->password, 0, PASSWORD_SIZE);
+        memcpy(this->password, password, PASSWORD_SIZE);
+        this->counter = counter;
+    }
+
+    void serialize(std::vector<uint8_t>& buffer) 
+    {
+        size_t position = 0;
+
+        std::memcpy(reinterpret_cast<void*>(buffer.data()), this->password, PASSWORD_SIZE);
+        position += PASSWORD_SIZE;
+
+        this->counter = htonl(this->counter);
+        std::memcpy(reinterpret_cast<void*>(buffer.data() + position), &this->counter, sizeof(uint32_t));
+    }
+
+    static PasswordMessage deserialize(const std::vector<uint8_t>& buffer) 
+    {
+        PasswordMessage passwordMessage;
+
+        size_t position = 0;
+
+        std::memcpy(reinterpret_cast<void*>(&passwordMessage.password), reinterpret_cast<const void*>(buffer.data()), PASSWORD_SIZE);
+        position += PASSWORD_SIZE;
+
+        std::memcpy(reinterpret_cast<void*>(&passwordMessage.counter), reinterpret_cast<const void*>(buffer.data() + position), sizeof(uint32_t));
+        passwordMessage.counter = ntohl(passwordMessage.counter);
+
+        return passwordMessage;
+    }
+};
