@@ -21,6 +21,7 @@
 #include "../crypto/RSASignature.hpp"
 #include "../crypto/AESCBC.hpp"
 #include "../const.hpp"
+#include "../crypto/sessionMessage.hpp"
 
 /*
     * Job struct
@@ -57,6 +58,7 @@ private:
     std::vector<uint8_t> iv;
     std::vector<uint8_t> hmacKey;
     std::vector<uint8_t> sessionKey;
+    uint32_t counter;
 
     const std::string serverPrivateKeyPath = "res/keys/private/server.pem";
 
@@ -78,5 +80,6 @@ private:
 
     bool checkUsername(const std::string& username);
     bool checkEmail(const std::string& email);
+    void checkCounter(uint32_t counter);
 
 };

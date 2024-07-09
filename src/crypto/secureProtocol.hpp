@@ -370,33 +370,36 @@ struct PasswordMessage {
 
     PasswordMessage(const char* password, uint32_t counter) 
     {
-        memset(this->password, 0, PASSWORD_SIZE);
-        memcpy(this->password, password, PASSWORD_SIZE);
+        memset(this->password, 0, PASSWORD_MAX_SIZE);
+        memcpy(this->password, password, PASSWORD_MAX_SIZE);
         this->counter = counter;
     }
 
     void serialize(std::vector<uint8_t>& buffer) 
     {
-        size_t position = 0;
+        ssize_t position = 0;
 
-        std::memcpy(reinterpret_cast<void*>(buffer.data()), this->password, PASSWORD_SIZE);
+        std::memcpy(buffer.data(), this->password, PASSWORD_MAX_SIZE);
         position += PASSWORD_SIZE;
 
         this->counter = htonl(this->counter);
-        std::memcpy(reinterpret_cast<void*>(buffer.data() + position), &this->counter, sizeof(uint32_t));
+        #ifdef DEBUG
+        std::cout << "Counter: " << this->counter << std::endl;
+        std::cout << "Counter Network: " << htonl(this->counter) << std::endl;
+        #endif
+        std::memcpy(buffer.data() + position, &this->counter, sizeof(uint32_t));
     }
 
     static PasswordMessage deserialize(const std::vector<uint8_t>& buffer) 
     {
         PasswordMessage passwordMessage;
 
-        size_t position = 0;
+        ssize_t position = 0;
 
-        std::memcpy(reinterpret_cast<void*>(&passwordMessage.password), reinterpret_cast<const void*>(buffer.data()), PASSWORD_SIZE);
+        std::memcpy(passwordMessage.password, buffer.data(), PASSWORD_MAX_SIZE);
         position += PASSWORD_SIZE;
 
-        std::memcpy(reinterpret_cast<void*>(&passwordMessage.counter), reinterpret_cast<const void*>(buffer.data() + position), sizeof(uint32_t));
-        passwordMessage.counter = ntohl(passwordMessage.counter);
+        std::memcpy(&passwordMessage.counter, buffer.data() + position, sizeof(uint32_t));
 
         return passwordMessage;
     }

@@ -547,11 +547,73 @@ bool Worker::registerUser() {
         std::cerr << e.what() << '\n';
         return false;
     }
+
+    //receive message with password
+    std::vector<uint8_t> buffer(sessionMessage::get_size(PWD_MESSAGE1_SIZE));
+
+    try {
+        this->receiveMessage(buffer, sessionMessage::get_size(PWD_MESSAGE1_SIZE));
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+
+    #ifdef DEBUG
+        printf("Received password from client %d\n", ntohs(userAddress.sin_port));
+    #endif
+
+    sessionMessage message = sessionMessage::deserialize(buffer, PWD_MESSAGE1_SIZE);
+    std::memset(buffer.data(), 0, buffer.size());
+    buffer.clear();
+
+    #ifdef DEBUG
+        printf("Deserialized password message\n");
+    #endif
+
+    std::vector<uint8_t> plaintext(PWD_MESSAGE1_SIZE);
+    message.decrypt(this->sessionKey, plaintext);
+
+    #ifdef DEBUG
+        printf("Decrypted password message\n");
+    #endif
+
+    PasswordMessage pwdMessage = PasswordMessage::deserialize(plaintext);
+
+    #ifdef DEBUG
+        printf("Deserialized password message\n");
+    #endif
+
+    counter = 1;
+
+    #ifdef DEBUG
+        printf("Received password message\n");
+        printf("Counter Network: %d\n", pwdMessage.counter);
+        printf("Counter : %d\n", htonl(pwdMessage.counter));
+        printf("Password: %s\n", pwdMessage.password);
+    #endif
+
+    checkCounter(ntohl(pwdMessage.counter));
+
+
+
+    std::string password(pwdMessage.password, pwdMessage.password + 30);
+
+    #ifdef DEBUG
+        printf("Password: %s\n", password.c_str());
+    #endif
     
 
 
 
     return true;
+
+}
+
+void Worker::checkCounter(uint32_t counter) {
+    if (this->counter  != counter) {
+        throw std::runtime_error("Counter mismatch");
+    }
+    this->counter = counter;
 
 }
 

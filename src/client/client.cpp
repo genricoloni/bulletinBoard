@@ -15,6 +15,7 @@ Client::Client(int port) : port(port){
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
     serverAddress.sin_addr.s_addr = inet_addr(SERVER_IP);
+    counter = 0;
 
     hmacKey.resize(SESSION_KEY_LENGTH);
     sessionKey.resize(SESSION_KEY_LENGTH);
@@ -575,7 +576,7 @@ bool Client::registerUser(){
     //get the password
     char ch;
     printf("Insert password: ");
-    turnOffEcho();
+    //turnOffEcho();
     do {
         ch = getchar();
         if (ch == 127) {
@@ -589,6 +590,22 @@ bool Client::registerUser(){
         }
     } while (ch != '\n' && ch != '\r' && password.size() < PASSWORD_MAX_SIZE);
 
+    //turnOnEcho();
+
+    #ifdef DEBUG
+    printf("Password inserted: %s\n", password.c_str());
+    #endif
+
+    sendPassword(password);
+
+    #ifdef DEBUG
+    printf("Password sent\n");
+    #endif
+
+
+
+
+
 
 
 
@@ -598,6 +615,7 @@ bool Client::registerUser(){
 }
 
 void Client::sendPassword(std::string password) {
+    //MODIFY TO SEND HASHED PASSWORD
     IncrementCounter();
 
     PasswordMessage message(password.c_str(), this->counter);
@@ -605,9 +623,35 @@ void Client::sendPassword(std::string password) {
     std::vector<uint8_t> serializedMessage(PWD_MESSAGE1_SIZE);
     message.serialize(serializedMessage);
 
-    
+    sessionMessage sessionMessage(this->sessionKey, this->hmacKey, serializedMessage);
 
+    std::memset(serializedMessage.data(), 0, serializedMessage.size());
+    serializedMessage.clear();
 
+    std::vector<uint8_t> serializedSessionMessage = sessionMessage.serialize();
+
+    #ifdef DEBUG
+    printf("Password message serialized\n");
+    #endif
+
+    try {
+        sendToServer(serializedSessionMessage);
+        std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+        serializedSessionMessage.clear();
+
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+        serializedSessionMessage.clear();
+
+        throw std::runtime_error("Error sending message to server");
+    }
+
+    #ifdef DEBUG
+    printf("Password message sent\n");
+    #endif
+
+    return;
 
 }
 
