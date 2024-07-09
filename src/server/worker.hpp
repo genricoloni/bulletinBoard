@@ -73,4 +73,6 @@ private:
 
     ssize_t receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize);
 
+    bool login();
+
 };

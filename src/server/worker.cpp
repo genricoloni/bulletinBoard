@@ -453,3 +453,7 @@ void Worker::initiateProtocol() {
     }
 
 };
+
+bool Worker::login() {
+    return true;
+}

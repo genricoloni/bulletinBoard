@@ -446,6 +446,9 @@ void Client::initiateProtocol(uint32_t mode) {
     } else if(mode == REGISTER_CODE){
         //call the register function
         registerUser();
+    } else {
+        std::cerr << "Invalid mode" << std::endl;
+        throw std::runtime_error("Invalid mode");
     }
     
 };
@@ -458,4 +461,79 @@ bool Client::login(){
     bool success = false;
 
     
+}
+
+// Include the necessary header file
+#include <termios.h>
+
+// Function to turn off console echo
+void Client::turnOffEcho() {
+    struct termios term;
+    tcgetattr(STDIN_FILENO, &term);
+    term.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+}
+
+// Function to turn on console echo
+void Client::turnOnEcho() {
+    struct termios term;
+    tcgetattr(STDIN_FILENO, &term);
+    term.c_lflag |= ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+    std::cout << std::endl;
+}
+
+
+
+bool Client::registerUser(){
+    #ifdef DEBUG
+    printf("Register function\n");
+    #endif
+
+    bool success = false;
+
+    std::string username;
+    std::string password;
+    std::string mail;
+
+    //get the username
+    printf("Insert username: ");
+    std::cin >> username;
+    getchar();
+
+    //copy the username to the class variable
+    memset(this->username.data(), 0, this->username.size());
+    this->username = std::string(username);
+
+    //get the password
+    printf("Insert password: ");
+    char ch;
+    turnOffEcho();
+    
+    do {
+        ch = getchar();
+        if (ch == 127){
+            if(!password.empty()){
+                password.pop_back();
+                std::cout << "\b \b";
+            }
+        } else if (ch != '\n'){
+            password += ch;
+            std::cout << "*";
+        }
+    } while (ch != '\n' && ch != '\r' && password.size() < PASSWORD_MAX_SIZE);
+    turnOnEcho();
+
+    #ifdef DEBUG
+    printf("User: %s\n", username.c_str());
+    printf("Password: %s\n", password.c_str());
+    #endif
+
+    getchar();
+    
+
+
+
+
+    return success;
 }

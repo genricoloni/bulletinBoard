@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
         case REGISTER_CODE:
             //register
             printf("Register\n");
+            client.initiateProtocol(uint32_t(REGISTER_CODE));
             getchar();
             break;
 

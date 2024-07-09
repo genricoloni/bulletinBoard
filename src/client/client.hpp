@@ -51,5 +51,8 @@ private:
     std::vector<uint8_t> hmacKey;
     std::vector<uint8_t> sessionKey;
 
+    void turnOnEcho();
+    void turnOffEcho();
+
 
 };
