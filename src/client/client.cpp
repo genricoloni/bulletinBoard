@@ -83,7 +83,7 @@ void Client::receiveFromServer(std::vector<uint8_t>& message) {
     }
 
 
-void Client::initiateProtocol(uint32_t mode) {
+bool Client::initiateProtocol(uint32_t mode) {
     #ifdef DEBUG
     printf("DEBUG>> Initiating communication to create secure connection\n");
     #endif
@@ -448,21 +448,21 @@ void Client::initiateProtocol(uint32_t mode) {
         //call the register function
         if (!registerUser()) {
             std::cerr << "Registration failed" << std::endl;
-            throw std::runtime_error("Registration failed");
+            return false;
         }
 
         //call the login function
         if (!login()) {
             std::cerr << "Login failed" << std::endl;
-            throw std::runtime_error("Login failed");
+            return false;
         }
         
     } else {
         std::cerr << "Invalid mode" << std::endl;
-        throw std::runtime_error("Invalid mode");
+        return false;
     }
 
-    return;
+    return true;
     
 };
 

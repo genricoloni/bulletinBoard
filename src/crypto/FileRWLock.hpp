@@ -24,6 +24,10 @@ public:
   // Writer functions
   bool openForWrite();
   void closeForWrite();
+
+  void printReaders() {
+    printf("Readers count: %d\n", readersCount.load());
+  }
 };
 
 #endif // FILERWLOCK_HPP

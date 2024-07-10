@@ -13,6 +13,9 @@ bool FileRWLock::openForRead() {
   while (writerPresent.load()) {
     cvReaders.wait(lock);
   }
+  #ifdef DEBUG
+  printf("DEBUG>> Opened file %s for read\n", filename.c_str());
+  #endif
   readersCount++;
   return true;
 }
@@ -28,12 +31,21 @@ void FileRWLock::closeForRead() {
 
 bool FileRWLock::openForWrite() {
   std::unique_lock<std::mutex> lock(mtx);
+  #ifdef DEBUG
+  printf("DEBUG>> Opening file %s for write\n", filename.c_str());
+  printf("DEBUG>> Readers count: %d\n", readersCount.load());
+  printf("DEBUG>> Writer present: %d\n", writerPresent.load());
+  
+  #endif
   // Wait for all readers and any writer to finish
   while (readersCount > 0 || writerPresent.load()) {
     writerPresent = true;
     cvWriter.wait(lock);
     writerPresent = false;
   }
+  #ifdef DEBUG
+  printf("DEBUG>> Opened file %s for write\n", filename.c_str());
+  #endif
   return true;
 }
 

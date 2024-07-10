@@ -28,7 +28,6 @@ void Worker::handleUser(){
         perror("Error reading from socket");
         exit(1);
     }
-    printf("Message from user: %s\n", buffer);
 
     //write to user
     n = write(userSocket, "I got your message", 18);
@@ -54,9 +53,9 @@ void Worker::workerMain(){
         }
         //print some about the queue
         #ifdef DEBUG
-            printf("Handling user\n");
-            printf("user port: %d\n", ntohs(userAddress.sin_port));
-            printf("user address: %s\n", inet_ntoa(userAddress.sin_addr));
+            printf("DEBUG>> Handling user\n");
+            printf("DEBUG>> user port: %d\n", ntohs(userAddress.sin_port));
+            printf("DEBUG>> user address: %s\n", inet_ntoa(userAddress.sin_addr));
 
         #endif
 
@@ -157,7 +156,7 @@ void Worker::initiateProtocol() {
     }
 
     #ifdef DEBUG
-        printf("Received M1 from client %d\n", ntohs(userAddress.sin_port));
+        printf("DEBUG>> Received M1 from client %d\n", ntohs(userAddress.sin_port));
     #endif
 
     //deserialize M1
@@ -189,7 +188,7 @@ void Worker::initiateProtocol() {
     }
 
     #ifdef DEBUG
-        printf("Received EPH key\n");
+        printf("DEBUG>> Received EPH key\n");
     #endif
 
     //generate shared secret
@@ -219,7 +218,7 @@ void Worker::initiateProtocol() {
     }
 
     #ifdef DEBUG
-        printf("Shared secret generated\n");
+        printf("DEBUG>> Shared secret generated\n");
     #endif
 
     //generate session hmac key
@@ -228,14 +227,14 @@ void Worker::initiateProtocol() {
 
     try {
         #ifdef DEBUG
-            printf("Generating session keys\n");
+            printf("DEBUG>> Generating session keys\n");
             //print address of sharedSecret
-            printf("Address of sharedSecret: %p\n", sharedSecret.data());
+            printf("DEBUG>> Address of sharedSecret: %p\n", sharedSecret.data());
         #endif
         SHA512::generateHash(reinterpret_cast<const unsigned char*>(sharedSecret.data()), sharedSecret.size(), keys, keySize);
 
         #ifdef DEBUG
-            printf("Session keys generated\n");
+            printf("DEBUG>> Session keys generated\n");
         #endif
         std::memset(sharedSecret.data(), 0, sharedSecret.size());
         sharedSecret.clear();
@@ -256,28 +255,28 @@ void Worker::initiateProtocol() {
 
     #ifdef DEBUG
         //print some address about keys and session keys
-        printf("Address of keys: %p\n", keys.data());
-        printf("Address of session keys: %p\n", sessionKey.data());
+        printf("DEBUG>> Address of keys: %p\n", keys.data());
+        printf("DEBUG>> Address of session keys: %p\n", sessionKey.data());
 
     #endif
 
     std::memcpy(this->sessionKey.data(), keys.data(), (keys.size()/2) * sizeof(uint8_t));
 
     #ifdef DEBUG
-        printf("Session keys copied 1\n");
+        printf("DEBUG>> Session keys copied 1\n");
     #endif
 
     std::memcpy(this->hmacKey.data(), keys.data() + ((keys.size()/2) * sizeof(uint8_t)), HMAC_DIGEST_SIZE * sizeof(uint8_t));
 
     #ifdef DEBUG
-        printf("Session keys copied\n");
+        printf("DEBUG>> Session keys copied\n");
     #endif
 
     std::memset(keys.data(), 0, keys.size());
     keys.clear();
 
     #ifdef DEBUG
-        printf("Session keys cleared\n");
+        printf("DEBUG>> Session keys cleared\n");
     #endif
 
     std::vector<uint8_t> serializedEPHKey;
@@ -298,7 +297,7 @@ void Worker::initiateProtocol() {
     EVP_PKEY_free(EPH_KEY);
 
     #ifdef DEBUG
-        printf("EPH key serialized\n");
+        printf("DEBUG>> EPH key serialized\n");
     #endif
 
     auto EPHKeyBufferSize = m1.EPHkeyLength + serializedEPHKey.size();
@@ -318,16 +317,16 @@ void Worker::initiateProtocol() {
         rsa = nullptr;
 
         #ifdef DEBUG
-            printf("Signed\n");
-        printf("Verifying signature...\n");
+            printf("DEBUG>> Signed\n");
+            printf("DEBUG>> Verifying signature...\n");
 
         rsa = new RSASignature("", "res/keys/public/server.pem");
 
         if (!rsa->verify(EPHKeyBuffer, signature)) {
-            printf("Signature verification failed\n");
+            printf("DEBUG>> signature verification failed\n");
             throw std::runtime_error("Signature verification failed");
         } else {
-            printf("Signature verified\n");
+            printf("DEBUG>> Signature verified\n");
         }
         #endif
 
@@ -350,7 +349,7 @@ void Worker::initiateProtocol() {
     }
 
     #ifdef DEBUG
-        printf("Signature generated\n");
+        printf("DEBUG>> Signature generated\n");
     #endif
 
     std::vector<uint8_t>iv(EVP_CIPHER_iv_length(EVP_aes_256_cbc()));
@@ -387,7 +386,7 @@ void Worker::initiateProtocol() {
     }
 
     #ifdef DEBUG
-        printf("Signature encrypted\n");
+        printf("DEBUG>> Signature encrypted\n");
     #endif
 
     try {
@@ -418,7 +417,7 @@ void Worker::initiateProtocol() {
     }
 
     #ifdef DEBUG
-        printf("Sent M2 to client %d\n", ntohs(userAddress.sin_port));
+        printf("DEBUG>> Sent M2 to client %d\n", ntohs(userAddress.sin_port));
     #endif
     
     std::vector<uint8_t> serializedM3(ProtocolM3::GetSize());
@@ -434,7 +433,7 @@ void Worker::initiateProtocol() {
     }
 
     #ifdef DEBUG
-        printf("Received M3 from client %d\n", ntohs(userAddress.sin_port));
+        printf("DEBUG>> Received M3 from client %d\n", ntohs(userAddress.sin_port));
     #endif
 
     try {
@@ -468,7 +467,7 @@ void Worker::initiateProtocol() {
     }
     
     #ifdef DEBUG
-        printf("Client request handled\n");
+        printf("DEBUG>> Client request handled\n");
     #endif
 
     std::memset(serializedM3.data(), 0, serializedM3.size());
@@ -495,13 +494,13 @@ bool Worker::login() {
     }
 
     #ifdef DEBUG
-        printf("Received M4 from client\n");
+        printf("DEBUG>> Received M4 from client\n");
     #endif
 
     ProtocolM4Reg_Usr m4Reg_Usr = ProtocolM4Reg_Usr::deserialize(userMessage);
 
     #ifdef DEBUG
-        printf("Deserialized M4\n");
+        printf("DEBUG>> Deserialized M4\n");
         printf("Username: %s\n", m4Reg_Usr.username.c_str());
         printf("Email: %s\n", m4Reg_Usr.email.c_str());
     #endif
@@ -556,7 +555,7 @@ bool Worker::login() {
     }
 
     #ifdef DEBUG
-        printf("Received password from client\n");
+        printf("DEBUG>> Received password from client\n");
     #endif
 
     sessionMessage message = sessionMessage::deserialize(buffer, PWD_MESSAGE1_SIZE);
@@ -565,24 +564,24 @@ bool Worker::login() {
     buffer.clear();
 
     #ifdef DEBUG
-        printf("Deserialized password message\n");
+        printf("DEBUG>> Deserialized password message\n");
     #endif
 
     std::vector<uint8_t> plaintext(PWD_MESSAGE1_SIZE);
     message.decrypt(this->sessionKey, plaintext);
 
     #ifdef DEBUG
-        printf("Decrypted password message\n");
+        printf("DEBUG>> Decrypted password message\n");
     #endif
 
     PasswordMessage pwdMessage = PasswordMessage::deserialize(plaintext);
 
     #ifdef DEBUG
-        printf("Deserialized password message\n");
+        printf("DEBUG>> Deserialized password message\n");
     #endif
 
     #ifdef DEBUG
-        printf("Received password: \n");
+        printf("DEBUG>> Received password: \n");
         for(int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
             printf("%02x", pwdMessage.password[i]);
         }
@@ -626,7 +625,7 @@ bool Worker::login() {
     }
 
     #ifdef DEBUG
-        printf("Password correct\n");
+        printf("DEBUG>> Password correct\n");
     #endif
 
     std::memset(pwdMessage.password, 0, HASHED_PASSWORD_SIZE);
@@ -665,14 +664,14 @@ bool Worker::registerUser() {
     }
 
     #ifdef DEBUG
-        printf("Received M4 from client %d\n", ntohs(userAddress.sin_port));
+        printf("DEBUG>> Received M4 from client %d\n", ntohs(userAddress.sin_port));
     #endif
 
     //deserialize message
     ProtocolM4Reg_Usr m4Reg_Usr = ProtocolM4Reg_Usr::deserialize(serializedM4Reg_Usr);
 
     #ifdef DEBUG
-        printf("Deserialized M4\n");
+        printf("DEBUG>> Deserialized M4\n");
         printf("Username: %s\n", m4Reg_Usr.username.c_str());
         printf("Email: %s\n", m4Reg_Usr.email.c_str());
     #endif
@@ -692,6 +691,10 @@ bool Worker::registerUser() {
             #ifdef DEBUG
                 printf("Username already in use\n");
             #endif
+            #ifdef DEBUG
+                fileLock->printReaders();
+                printf("DEBUG>> Closed file for read username\n");
+            #endif
 
             ProtocolM4Response response(USR_ALREADY_TAKEN);
             std::vector<uint8_t> serializedResponse = response.serialize();
@@ -703,17 +706,21 @@ bool Worker::registerUser() {
                 return false;
             }
 
+            fileLock->closeForRead();
 
             return false;
         }
+        fileLock->closeForRead();
+
+
     }
 
     #ifdef DEBUG
-        printf("Username not in use\n");
+        printf("DEBUG>> Username not in use\n");
     #endif
 
     //check if email is already in use
-    if(fileLock->openForRead()){
+    if(!fileLock->openForRead()){
         std::cerr << "Error opening file for read\n";
         return false;
     } else {
@@ -721,6 +728,7 @@ bool Worker::registerUser() {
             #ifdef DEBUG
                 printf("Email already in use\n");
             #endif
+            fileLock->closeForRead();
 
             ProtocolM4Response response(MAIL_ALREADY_TAKEN);
             std::vector<uint8_t> serializedResponse = response.serialize();
@@ -734,10 +742,12 @@ bool Worker::registerUser() {
 
             return false;
         }
+        fileLock->closeForRead();
+
     }
 
     #ifdef DEBUG
-        printf("Email not in use\n");
+        printf("DEBUG>> Email not in use\n");
     #endif
 
     //send response to client
@@ -763,7 +773,7 @@ bool Worker::registerUser() {
     }
 
     #ifdef DEBUG
-        printf("Received password from client %d\n", ntohs(userAddress.sin_port));
+        printf("DEBUG>> Received password from client %d\n", ntohs(userAddress.sin_port));
     #endif
 
     sessionMessage message = sessionMessage::deserialize(buffer, PWD_MESSAGE1_SIZE);
@@ -771,26 +781,26 @@ bool Worker::registerUser() {
     buffer.clear();
 
     #ifdef DEBUG
-        printf("Deserialized password message\n");
+        printf("DEBUG>> Deserialized password message\n");
     #endif
 
     std::vector<uint8_t> plaintext(PWD_MESSAGE1_SIZE);
     message.decrypt(this->sessionKey, plaintext);
 
     #ifdef DEBUG
-        printf("Decrypted password message\n");
+        printf("DEBUG>> Decrypted password message\n");
     #endif
 
     PasswordMessage pwdMessage = PasswordMessage::deserialize(plaintext);
 
     #ifdef DEBUG
-        printf("Deserialized password message\n");
+        printf("DEBUG>> Deserialized password message\n");
     #endif
 
     counter = 1;
 
     #ifdef DEBUG
-        printf("Received password message\n");
+        printf("DEBUG>> Received password message\n");
         printf("Counter Network: %d\n", pwdMessage.counter);
         printf("Counter : %d\n", htonl(pwdMessage.counter));
     #endif
@@ -814,7 +824,7 @@ bool Worker::registerUser() {
     std::string totpCode = totp.generateTOTP(30);
 
     #ifdef DEBUG
-        printf("TOTP code: %s\n", totpCode.c_str());
+        printf("DEBUG>> TOTP code: %s\n", totpCode.c_str());
     #endif
 
     printf("TOTP code: %s\n", totpCode.c_str());
@@ -830,7 +840,7 @@ bool Worker::registerUser() {
     }
 
     #ifdef DEBUG
-        printf("Received OTP from client %d\n", ntohs(userAddress.sin_port));
+        printf("DEBUG>> Received OTP from client %d\n", ntohs(userAddress.sin_port));
     #endif
 
     sessionMessage otpMessage = sessionMessage::deserialize(serializedOTP, OTP_SIZE);
@@ -839,14 +849,14 @@ bool Worker::registerUser() {
     serializedOTP.clear();
 
     #ifdef DEBUG
-        printf("Deserialized OTP message\n");
+        printf("DEBUG>> Deserialized OTP message\n");
     #endif
 
     std::vector<uint8_t> otpPlaintext(OTP_SIZE);
     otpMessage.decrypt(this->sessionKey, otpPlaintext);
 
     #ifdef DEBUG
-        printf("Decrypted OTP message\n");
+        printf("DEBUG>> Decrypted OTP message\n");
     #endif
 
     for(int i = 0; i < OTP_SIZE; i++) {
@@ -887,13 +897,13 @@ bool Worker::registerUser() {
 
 
     #ifdef DEBUG
-        printf("Local OTP: %s\n", totpCode.c_str());
+        printf("DEBUG>> Local OTP: %s\n", totpCode.c_str());
         printf("Received OTP: %s\n", std::string(otpPlaintext.begin(), otpPlaintext.end()).c_str());
     #endif
 
 
     #ifdef DEBUG
-        printf("Sent response to client %d\n", ntohs(userAddress.sin_port));
+        printf("DEBUG>> Sent response to client %d\n", ntohs(userAddress.sin_port));
     #endif
 
 
@@ -989,7 +999,7 @@ bool Worker::writeUser(const std::string& username, const std::string& email, co
     std::ofstream file("res/users/users.txt", std::ios::app);
 
     #ifdef DEBUG
-        printf("Writing user to file\n");
+        printf("DEBUG>> Writing user to file\n");
     #endif
     if (!file.is_open()) {
         return false;
@@ -997,13 +1007,13 @@ bool Worker::writeUser(const std::string& username, const std::string& email, co
 
     file << username << "," << email << ",";
     #ifdef DEBUG
-        printf("Wrote username and email\n");
+        printf("DEBUG>> Wrote username and email\n");
     #endif
     for (int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
         file << std::hex << std::setw(2) << std::setfill('0') << (int)password[i];
     }
     #ifdef DEBUG
-        printf("Wrote password\n");
+        printf("DEBUG>> Wrote password\n");
     #endif
 
     file << std::endl;
