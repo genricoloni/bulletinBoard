@@ -1,12 +1,12 @@
 #include "worker.hpp"
 
-Worker::Worker(job_t* job, FileRWLock* fileLock, std::vector<message>* messages, FileRWLock* messageLock){
+Worker::Worker(job_t* job, FileRWLock* fileLock, BulletinBoardSystem* bbs, FileRWLock* messageLock){
     this->job = job;
     this->iv.resize(AES_BLOCK_SIZE);
     this->hmacKey.resize(SESSION_KEY_LENGTH);
     this->sessionKey.resize(SESSION_KEY_LENGTH);
     this->fileLock = fileLock;
-    this->messages = messages;
+    this->bbs = bbs;
     this->messageLock = messageLock;
 
 }
@@ -1088,7 +1088,7 @@ bool Worker::checkPassword(const std::string& username, const uint8_t* password)
 }
 
 void Worker::waitForRequest(){
-    while (true) {
+    /*while (true) {
         std::vector<uint8_t> buffer(sessionMessage::get_size(0));
 
         try {
@@ -1109,46 +1109,47 @@ void Worker::waitForRequest(){
         } else if (message.ciphertext == ADD_REQUEST) {
             AddHandler();
         }
-    }
+    }*/
 }
 
 void Worker::AddHandler(const std::string& title, const std::string& author, const std::string& body) {
-    BulletinBoardSystem.Add(title, author, body);
+    bbs->Add(title, author, body);
 }
 
-void Worker::GetHandler(const std::string& title) {
-    sessionMessage message;
-    std::string body = BulletinBoardSystem.Get(title);
+void Worker::GetHandler(const int mid) {
+    sessionMessage session_msg;
+    message msg = bbs->Get(mid);
+    std::vector<uint8_t> serializedMsg = bbs->serialize(msg);
 
     // serialize the body into the session message
-    message = sessionMessage(sessionKey, hmacKey, body);
+    session_msg = sessionMessage(this->sessionKey, this->hmacKey, serializedMsg);
 
-    std::vector<uint8_t> serializedMessage = message.serialize();
+    std::vector<uint8_t> serializedSessionMessage = session_msg.serialize();
 
     try {
-        workerSend(serializedMessage);
+        workerSend(serializedSessionMessage);
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return;
     }
 
-    std::memset(serializedMessage.data(), 0, serializedMessage.size());
-    serializedMessage.clear();
+    std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+    serializedSessionMessage.clear();
 }
 
 void Worker::ListHandler(const int n) {
-    sessionMessage message;
-    std::vector<message> messages = BulletinBoardSystem.List(n);
+    /*sessionMessage session_msg;
+    std::vector<message> messages = bbs->List(n);
 
     // serialize the messages into the session message
-    message = sessionMessage(sessionKey, hmacKey, messages);
+    session_msg = sessionMessage(sessionKey, hmacKey, messages);
 
-    std::vector<uint8_t> serializedMessage = message.serialize();
+    std::vector<uint8_t> serializedMessage = session_msg.serialize();
 
     try {
         workerSend(serializedMessage);
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return;
-    }
+    }*/
 }

@@ -27,7 +27,7 @@ public:
 
     FileRWLock* fileLock;
 
-    std::vector<message>* messages;
+    BulletinBoardSystem* bbs;
     FileRWLock* messageLock;
 
 
