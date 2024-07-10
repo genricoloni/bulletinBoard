@@ -1138,18 +1138,29 @@ void Worker::GetHandler(const int mid) {
 }
 
 void Worker::ListHandler(const int n) {
-    /*sessionMessage session_msg;
+    sessionMessage session_msg;
     std::vector<message> messages = bbs->List(n);
 
-    // serialize the messages into the session message
-    session_msg = sessionMessage(sessionKey, hmacKey, messages);
+    // iterate through the messages and serialize them into a single string to send to the client.
+    // the messages are separated by a newline character
+    std::string serializedMessages;
+    for (int i = 0; i < messages.size(); i++) {
+        std::vector<uint8_t> serializedMsg = bbs->serialize(messages[i]);
+        serializedMessages += std::string(serializedMsg.begin(), serializedMsg.end()) + "\n";
+    }
 
-    std::vector<uint8_t> serializedMessage = session_msg.serialize();
+    // create a session message with the serialized messages
+    session_msg = sessionMessage(this->sessionKey, this->hmacKey, std::vector<uint8_t>(serializedMessages.begin(), serializedMessages.end()));
+
+    std::vector<uint8_t> serializedSessionMessage = session_msg.serialize();
 
     try {
-        workerSend(serializedMessage);
+        workerSend(serializedSessionMessage);
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return;
-    }*/
+    }
+
+    std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+    serializedSessionMessage.clear();
 }
