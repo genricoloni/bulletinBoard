@@ -20,6 +20,9 @@
 #define EXIT_CODE 20
 #define LOGIN_CODE 21
 #define REGISTER_CODE 22
+#define LIST_CODE 21
+#define GET_CODE 22
+#define ADD_CODE 23
 
 #define LOGIN_SUCCESS 30
 #define REGISTER_SUCCESS 31

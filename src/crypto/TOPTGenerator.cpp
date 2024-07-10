@@ -32,7 +32,7 @@ TOTPGenerator::TOTPGenerator() {
     }
 
     #ifdef DEBUG
-    printf("Secret key: %s\n", secretKey_.c_str());
+    printf("DEBUG>>Secret key: %s\n", secretKey_.c_str());
     #endif
 
        

@@ -30,7 +30,7 @@ public:
     void sendToServer(const std::vector<uint8_t>& message);
     void receiveFromServer(std::vector<uint8_t>& message);
 
-    void initiateProtocol(uint32_t mode);
+    bool initiateProtocol(uint32_t mode);
 
     bool login();
     bool registerUser();
