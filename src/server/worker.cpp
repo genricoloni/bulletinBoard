@@ -476,9 +476,7 @@ void Worker::initiateProtocol() {
     std::memset(serializedM3.data(), 0, serializedM3.size());
     serializedM3.clear();
 
-    //
-
-
+    waitForRequest();
 
     
 };
@@ -1088,28 +1086,60 @@ bool Worker::checkPassword(const std::string& username, const uint8_t* password)
 }
 
 void Worker::waitForRequest(){
-    /*while (true) {
-        std::vector<uint8_t> buffer(sessionMessage::get_size(0));
+    while (true) {
+        std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(uint32_t)));
 
         try {
-            this->receiveMessage(buffer, sessionMessage::get_size(0));
+            workerReceive(buffer, sessionMessage::get_size(sizeof(uint32_t)));
         } catch (const std::exception &e) {
             std::cerr << e.what() << '\n';
             return;
         }
 
-        sessionMessage message = sessionMessage::deserialize(buffer, 0);
+        sessionMessage sessionMsg = sessionMessage::deserialize(buffer, sizeof(uint32_t));
 
         std::memset(buffer.data(), 0, buffer.size());
+        buffer.clear();
 
-        if (message.ciphertext == LIST_REQUEST) {
-            ListHandler();
-        } else if (message.ciphertext == GET_REQUEST) {
-            GetHandler();
-        } else if (message.ciphertext == ADD_REQUEST) {
-            AddHandler();
+        std::vector<uint8_t> plaintext(sizeof(uint32_t));
+        sessionMsg.decrypt(this->sessionKey, plaintext);
+
+        uint32_t request = *reinterpret_cast<uint32_t*>(plaintext.data());
+
+        std::memset(plaintext.data(), 0, plaintext.size());
+        plaintext.clear();
+
+        #ifdef DEBUG
+            printf("DEBUG>> Received request: %d\n", request);
+        #endif
+
+        switch (request) {
+            case LIST_REQUEST:
+                ProtocolM4Response ack = ProtocolM4Response(ACK);
+                std::vector<uint8_t> serializedAck = ack.serialize();
+
+                try {
+                    workerSend(serializedAck);
+                } catch (const std::exception &e) {
+                    std::cerr << e.what() << '\n';
+                    return;
+                }
+
+                std::memset(serializedAck.data(), 0, serializedAck.size());
+                serializedAck.clear();
+
+                ListHandler();
+                break;
+            case GET_REQUEST:
+                
+                break;
+            case ADD_REQUEST:
+                
+                break;
+            default:
+                break;
         }
-    }*/
+    }
 }
 
 void Worker::AddHandler(const std::string& title, const std::string& author, const std::string& body) {
@@ -1137,19 +1167,50 @@ void Worker::GetHandler(const int mid) {
     serializedSessionMessage.clear();
 }
 
-void Worker::ListHandler(const int n) {
-    /*sessionMessage session_msg;
-    std::vector<message> messages = bbs->List(n);
-
-    // serialize the messages into the session message
-    session_msg = sessionMessage(sessionKey, hmacKey, messages);
-
-    std::vector<uint8_t> serializedMessage = session_msg.serialize();
-
+void Worker::ListHandler() {
+    std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(uint32_t)));
     try {
-        workerSend(serializedMessage);
+        this->workerReceive(buffer, sessionMessage::get_size(sizeof(uint32_t)));
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return;
-    }*/
+    }
+
+    sessionMessage response = sessionMessage::deserialize(buffer, sessionMessage::get_size(sizeof(uint32_t)));
+
+    std::vector<uint8_t> plaintext(sessionMessage::get_size(sizeof(uint32_t)));
+    response.decrypt(this->sessionKey, plaintext);
+
+    #ifdef DEBUG
+        printf("DEBUG>> Decrypted message %s\n", response.getPayload().c_str());
+    #endif
+
+    std::memset(plaintext.data(), 0, plaintext.size());
+    plaintext.clear();
+
+    sessionMessage session_msg;
+    std::vector<message> messages = bbs->List(n);
+
+    // iterate through the messages and serialize them into a single string to send to the client.
+    // the messages are separated by a newline character
+    std::string serializedMessages;
+    for (int i = 0; i < messages.size(); i++) {
+        std::vector<uint8_t> serializedMsg = bbs->serialize(messages[i]);
+        serializedMessages += std::string(serializedMsg.begin(), serializedMsg.end()) + "\n";
+    }
+
+    // create a session message with the serialized messages
+    session_msg = sessionMessage(this->sessionKey, this->hmacKey, std::vector<uint8_t>(serializedMessages.begin(), serializedMessages.end()));
+
+    std::vector<uint8_t> serializedSessionMessage = session_msg.serialize();
+
+    try {
+        workerSend(serializedSessionMessage);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return;
+    }
+
+    std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+    serializedSessionMessage.clear();
 }
