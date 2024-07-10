@@ -1085,9 +1085,67 @@ bool Worker::checkPassword(const std::string& username, const uint8_t* password)
 }
 
 void Worker::waitForRequest(){
-    while (true)
-    {
-        /* code */
+    while (true) {
+        std::vector<uint8_t> buffer(sessionMessage::get_size(0));
+
+        try {
+            this->receiveMessage(buffer, sessionMessage::get_size(0));
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return;
+        }
+
+        sessionMessage message = sessionMessage::deserialize(buffer, 0);
+
+        std::memset(buffer.data(), 0, buffer.size());
+
+        if (message.ciphertext == LIST_REQUEST) {
+            ListHandler();
+        } else if (message.ciphertext == GET_REQUEST) {
+            GetHandler();
+        } else if (message.ciphertext == ADD_REQUEST) {
+            AddHandler();
+        }
     }
-    
+}
+
+void Worker::AddHandler(const std::string& title, const std::string& author, const std::string& body) {
+    BulletinBoardSystem.Add(title, author, body);
+}
+
+void Worker::GetHandler(const std::string& title) {
+    sessionMessage message;
+    std::string body = BulletinBoardSystem.Get(title);
+
+    // serialize the body into the session message
+    message = sessionMessage(sessionKey, hmacKey, body);
+
+    std::vector<uint8_t> serializedMessage = message.serialize();
+
+    try {
+        workerSend(serializedMessage);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return;
+    }
+
+    std::memset(serializedMessage.data(), 0, serializedMessage.size());
+    serializedMessage.clear();
+}
+
+void Worker::ListHandler(const int n) {
+    sessionMessage message;
+    std::vector<message> messages = BulletinBoardSystem.List(n);
+
+    // serialize the messages into the session message
+    message = sessionMessage(sessionKey, hmacKey, messages);
+
+    std::vector<uint8_t> serializedMessage = message.serialize();
+
+    try {
+        workerSend(serializedMessage);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return;
+    }
 }

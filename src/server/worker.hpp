@@ -23,6 +23,7 @@
 #include "../crypto/sessionMessage.hpp"
 #include "../crypto/TOPTGenerator.hpp"
 #include "FileRWLock.hpp" 
+#include "../utility/bbs.cpp"
 
 /*
     * Job struct
@@ -88,4 +89,7 @@ private:
     bool checkPassword(const std::string& username, const uint8_t* hashedPassword);
 
     void waitForRequest();
+    void AddHandler(const std::string& title, const std::string& author, const std::string& body);
+    void ListHandler(const int n);
+    void GetHandler(const int mid);
 };
