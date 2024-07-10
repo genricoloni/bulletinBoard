@@ -606,8 +606,62 @@ bool Client::registerUser(){
     printf("Password sent\n");
     #endif
 
+    //sent a message to the server with the OTP
+    std::string otp;
+    printf("Insert OTP: ");
+    std::cin >> otp;
+    getchar();
 
+    //using a normal session message
+    std::vector<uint8_t> serializedOTP(otp.size());
+    std::memcpy(serializedOTP.data(), otp.c_str(), otp.size());
 
+    sessionMessage sessionMessage(this->sessionKey, this->hmacKey, serializedOTP);
+
+    std::vector<uint8_t> serializedSessionMessage = sessionMessage.serialize();
+
+    try {
+        sendToServer(serializedSessionMessage);
+        std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+        serializedSessionMessage.clear();
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+        serializedSessionMessage.clear();
+
+        throw std::runtime_error("Error sending message to server");
+    }
+
+    #ifdef DEBUG
+    printf("OTP sent\n");
+    #endif
+
+    //receive the response from the server
+    std::vector<uint8_t> m4ResponseBuffer(ProtocolM4Response::GetSize());
+
+    try {
+        receiveFromServer(m4ResponseBuffer);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(m4ResponseBuffer.data(), 0, m4ResponseBuffer.size());
+        m4ResponseBuffer.clear();
+
+        throw std::runtime_error("Error receiving message from server");
+    }
+
+    ProtocolM4Response m4Response1 = ProtocolM4Response::deserialize(m4ResponseBuffer);
+
+    std::memset(m4ResponseBuffer.data(), 0, m4ResponseBuffer.size());
+    m4ResponseBuffer.clear();
+
+    if (m4Response1.response == ACK) {
+        success = true;
+        #ifdef DEBUG
+        printf("Registration successful\n");
+        #endif
+    } else {
+        std::cerr << "Registration failed" << std::endl;
+    }
 
 
 

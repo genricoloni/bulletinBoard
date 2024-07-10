@@ -21,6 +21,7 @@
 #include "../crypto/AESCBC.hpp"
 #include "../const.hpp"
 #include "../crypto/sessionMessage.hpp"
+#include "../crypto/TOPTGenerator.hpp"
 
 /*
     * Job struct

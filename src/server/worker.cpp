@@ -605,9 +605,105 @@ bool Worker::registerUser() {
     printf("\n");
     #endif
     
-    //
+    TOTPGenerator totp;
+    
+    std::string totpCode = totp.generateTOTP(30);
+
+    #ifdef DEBUG
+        printf("TOTP code: %s\n", totpCode.c_str());
+    #endif
+
+    //wait for client to send OTP
+    std::vector<uint8_t> serializedOTP(sessionMessage::get_size(OTP_SIZE));
+
+    try {
+        this->receiveMessage(serializedOTP, sessionMessage::get_size(OTP_SIZE));
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+
+    #ifdef DEBUG
+        printf("Received OTP from client %d\n", ntohs(userAddress.sin_port));
+    #endif
+
+    sessionMessage otpMessage = sessionMessage::deserialize(serializedOTP, OTP_SIZE);
+
+    std::memset(serializedOTP.data(), 0, serializedOTP.size());
+    serializedOTP.clear();
+
+    #ifdef DEBUG
+        printf("Deserialized OTP message\n");
+    #endif
+
+    std::vector<uint8_t> otpPlaintext(OTP_SIZE);
+    otpMessage.decrypt(this->sessionKey, otpPlaintext);
+
+    #ifdef DEBUG
+        printf("Decrypted OTP message\n");
+    #endif
+
+    for(int i = 0; i < OTP_SIZE; i++) {
+        if (otpPlaintext[i] != totpCode[i]) {
+            #ifdef DEBUG
+                printf("OTP mismatch\n");
+            #endif
+
+            std::memset(otpPlaintext.data(), 0, otpPlaintext.size());
+            otpPlaintext.clear();
+
+            std::memset(m4Reg_Usr.username.data(), 0, m4Reg_Usr.username.size());
+            std::memset(m4Reg_Usr.email.data(), 0, m4Reg_Usr.email.size());
+            m4Reg_Usr.username.clear();
+            m4Reg_Usr.email.clear();
+
+            std::memset(pwdMessage.password, 0, HASHED_PASSWORD_SIZE);
+            std::memset(password.data(), 0, password.size());
+            password.clear();
+
+            ProtocolM4Response response(OTP_MISMATCH);
+            std::vector<uint8_t> serializedResponse = response.serialize();
+
+            try {
+                workerSend(serializedResponse);
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << '\n';
+                return false;
+            }
+
+            //clear the response message
+            std::memset(serializedResponse.data(), 0, serializedResponse.size());
+            serializedResponse.clear();
+            
+            return false;
+        }
+    }
 
 
+    #ifdef DEBUG
+        printf("Local OTP: %s\n", totpCode.c_str());
+        printf("Received OTP: %s\n", std::string(otpPlaintext.begin(), otpPlaintext.end()).c_str());
+    #endif
+
+    //send response to client
+    ProtocolM4Response result = ProtocolM4Response(ACK);
+
+    std::vector<uint8_t> serializedResult = result.serialize();
+
+    try {
+        workerSend(serializedResult);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+
+    #ifdef DEBUG
+        printf("Sent response to client %d\n", ntohs(userAddress.sin_port));
+    #endif
+
+    
+
+    
 
     return true;
 
