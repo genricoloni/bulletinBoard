@@ -448,11 +448,14 @@ void Client::initiateProtocol(uint32_t mode) {
         //call the register function
         if (!registerUser()) {
             std::cerr << "Registration failed" << std::endl;
-            return;
+            throw std::runtime_error("Registration failed");
         }
 
         //call the login function
-        login();
+        if (!login()) {
+            std::cerr << "Login failed" << std::endl;
+            throw std::runtime_error("Login failed");
+        }
         
     } else {
         std::cerr << "Invalid mode" << std::endl;
@@ -578,8 +581,10 @@ bool Client::login(){
     if (m4Response1.response == ACK) {
         success = true;
         printf("Login successful: welcome %s\n", username.c_str());
+        return success;
     } else {
         std::cerr << "Login failed" << std::endl;
+        return success;
     }
     
 }

@@ -7,6 +7,11 @@ Server::Server(int port, int workerCount, volatile sig_atomic_t* signal_caught) 
 
     jobs = new job_t();
     jobs->isDone = false;
+
+    FileRWLock* fileLock = new FileRWLock("res/keys/private/server.pem");
+    this->fileLock = fileLock;
+    
+    return;
 }
 
 Server::~Server() {
@@ -59,7 +64,7 @@ void Server::acceptClient() {
 
     for (int i = 0; i < workerCount; i++) {
         //new worker
-        Worker* worker = new Worker(jobs);
+        Worker* worker = new Worker(jobs, fileLock);
         workers.push_back(worker);
         workerThreads.emplace_back([&worker]() { worker->workerMain(); });
     
@@ -81,7 +86,7 @@ void Server::acceptClient() {
         tv.tv_usec = 0;
 
         //select call
-        int retval = select(socket + 1, &readfds, NULL, NULL, &tv);
+        int retval = select(socket + 1, &readfds, nullptr, nullptr, &tv);
 
         if(retval == -1){
             perror("Error on select");

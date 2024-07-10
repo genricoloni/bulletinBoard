@@ -1,11 +1,11 @@
 #include "worker.hpp"
 
-Worker::Worker(job_t* job){
+Worker::Worker(job_t* job, FileRWLock* fileLock){
     this->job = job;
     this->iv.resize(AES_BLOCK_SIZE);
     this->hmacKey.resize(SESSION_KEY_LENGTH);
     this->sessionKey.resize(SESSION_KEY_LENGTH);
-
+    this->fileLock = fileLock;
 }
 
 Worker::~Worker(){
@@ -507,22 +507,30 @@ bool Worker::login() {
     #endif
 
     //check if username is in use
-    if (!checkUsername(m4Reg_Usr.username)) {
-        #ifdef DEBUG
-            printf("Username not found\n");
-        #endif
+    //take read lock
+    if(!fileLock->openForRead()){
+        std::cerr << "Error opening file for read\n";
+        return false;
+    } else {
 
-        ProtocolM4Response response(USR_NOT_FOUND);
-        std::vector<uint8_t> serializedResponse = response.serialize();
+        if (!checkUsername(m4Reg_Usr.username)) {
+            fileLock->closeForRead();
+            #ifdef DEBUG
+                printf("Username not found\n");
+            #endif
 
-        try {
-            workerSend(serializedResponse);
-        } catch (const std::exception &e) {
-            std::cerr << e.what() << '\n';
+            ProtocolM4Response response(USR_NOT_FOUND);
+            std::vector<uint8_t> serializedResponse = response.serialize();
+
+            try {
+                workerSend(serializedResponse);
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << '\n';
+                return false;
+            }
+
             return false;
         }
-
-        return false;
     }
 
     //send ACK and wait for password
@@ -581,33 +589,41 @@ bool Worker::login() {
         printf("\n");
     #endif
 
-    if (!checkPassword(m4Reg_Usr.username, pwdMessage.password)) {
-        #ifdef DEBUG
-            printf("Password mismatch\n");
-        #endif
-
-        std::memset(pwdMessage.password, 0, HASHED_PASSWORD_SIZE);
-        std::memset(m4Reg_Usr.username.data(), 0, m4Reg_Usr.username.size());
-        std::memset(m4Reg_Usr.email.data(), 0, m4Reg_Usr.email.size());
-        m4Reg_Usr.username.clear();
-        m4Reg_Usr.email.clear();
-
-        ProtocolM4Response response(WRONG_PASSWORD);
-        std::vector<uint8_t> serializedResponse = response.serialize();
-
-        try {
-            workerSend(serializedResponse);
-        } catch (const std::exception &e) {
-            std::cerr << e.what() << '\n';
-            return false;
-        }
-
-        //clear the response message
-        std::memset(serializedResponse.data(), 0, serializedResponse.size());
-        serializedResponse.clear();
-
+    //lock the file for reading
+    if(!fileLock->openForRead()){
+        std::cerr << "Error opening file for read\n";
         return false;
-    } 
+    } else {
+
+        if (!checkPassword(m4Reg_Usr.username, pwdMessage.password)) {
+            #ifdef DEBUG
+                printf("Password mismatch\n");
+            #endif
+            fileLock->closeForRead();
+
+            std::memset(pwdMessage.password, 0, HASHED_PASSWORD_SIZE);
+            std::memset(m4Reg_Usr.username.data(), 0, m4Reg_Usr.username.size());
+            std::memset(m4Reg_Usr.email.data(), 0, m4Reg_Usr.email.size());
+            m4Reg_Usr.username.clear();
+            m4Reg_Usr.email.clear();
+
+            ProtocolM4Response response(WRONG_PASSWORD);
+            std::vector<uint8_t> serializedResponse = response.serialize();
+
+            try {
+                workerSend(serializedResponse);
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << '\n';
+                return false;
+            }
+
+            //clear the response message
+            std::memset(serializedResponse.data(), 0, serializedResponse.size());
+            serializedResponse.clear();
+
+            return false;
+        } 
+    }
 
     #ifdef DEBUG
         printf("Password correct\n");
@@ -662,23 +678,34 @@ bool Worker::registerUser() {
     #endif
 
     //check if username is already in use
-    if (checkUsername(m4Reg_Usr.username)) {
+    if (!fileLock->openForRead()) {
         #ifdef DEBUG
-            printf("Username already in use\n");
+            printf("DEBUG>> Error opening file for read\n");
         #endif
+        std::cerr << "Error opening file for read\n";
+        return false;
+    } else {
+        #ifdef DEBUG
+            printf("DEBUG>> Checking username\n");
+        #endif
+        if (checkUsername(m4Reg_Usr.username)) {
+            #ifdef DEBUG
+                printf("Username already in use\n");
+            #endif
 
-        ProtocolM4Response response(USR_ALREADY_TAKEN);
-        std::vector<uint8_t> serializedResponse = response.serialize();
+            ProtocolM4Response response(USR_ALREADY_TAKEN);
+            std::vector<uint8_t> serializedResponse = response.serialize();
 
-        try {
-            workerSend(serializedResponse);
-        } catch (const std::exception &e) {
-            std::cerr << e.what() << '\n';
+            try {
+                workerSend(serializedResponse);
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << '\n';
+                return false;
+            }
+
+
             return false;
         }
-
-
-        return false;
     }
 
     #ifdef DEBUG
@@ -686,22 +713,27 @@ bool Worker::registerUser() {
     #endif
 
     //check if email is already in use
-    if (checkEmail(m4Reg_Usr.email)) {
-        #ifdef DEBUG
-            printf("Email already in use\n");
-        #endif
+    if(fileLock->openForRead()){
+        std::cerr << "Error opening file for read\n";
+        return false;
+    } else {
+        if (checkEmail(m4Reg_Usr.email)) {
+            #ifdef DEBUG
+                printf("Email already in use\n");
+            #endif
 
-        ProtocolM4Response response(MAIL_ALREADY_TAKEN);
-        std::vector<uint8_t> serializedResponse = response.serialize();
-        
-        try {
-            workerSend(serializedResponse);
-        } catch (const std::exception &e) {
-            std::cerr << e.what() << '\n';
+            ProtocolM4Response response(MAIL_ALREADY_TAKEN);
+            std::vector<uint8_t> serializedResponse = response.serialize();
+
+            try {
+                workerSend(serializedResponse);
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << '\n';
+                return false;
+            }
+
             return false;
         }
-        
-        return false;
     }
 
     #ifdef DEBUG
@@ -866,9 +898,14 @@ bool Worker::registerUser() {
 
 
     //write user to file
-    if (!writeUser(m4Reg_Usr.username, m4Reg_Usr.email, pwdMessage.password)) {
-        std::cerr << "Error writing user to file\n";
+    if(!fileLock->openForWrite()){
+        std::cerr << "Error opening file for write\n";
         return false;
+    } else {
+        if (!writeUser(m4Reg_Usr.username, m4Reg_Usr.email, pwdMessage.password)) {
+            std::cerr << "Error writing user to file\n";
+            return false;
+        }
     }
 
     //send response to client

@@ -22,6 +22,7 @@
 #include "../const.hpp"
 #include "../crypto/sessionMessage.hpp"
 #include "../crypto/TOPTGenerator.hpp"
+#include "FileRWLock.hpp" 
 
 /*
     * Job struct
@@ -47,12 +48,14 @@ typedef struct job job_t;
 */
 class Worker {
 public:
-    Worker(job_t* job);
+    Worker(job_t* job, FileRWLock* fileLock);
     ~Worker();
 
     void workerMain();
 
 private:
+
+    FileRWLock* fileLock;
 
     job_t* job;
     std::vector<uint8_t> iv;

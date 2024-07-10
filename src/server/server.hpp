@@ -12,6 +12,8 @@
 #include "worker.hpp"
 
 
+
+
 class Server {
 public:
     Server(int port, int workerCount, volatile sig_atomic_t* signal_caught);
@@ -21,6 +23,8 @@ public:
     void acceptClient();
 
     void startListening();
+
+    FileRWLock* fileLock;
 
 
 
