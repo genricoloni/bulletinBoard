@@ -23,7 +23,7 @@
 #include "../crypto/sessionMessage.hpp"
 #include "../crypto/TOPTGenerator.hpp"
 #include "FileRWLock.hpp" 
-#include "../utility/bbs.cpp"
+#include "../utility/bbs.hpp"
 
 /*
     * Job struct
@@ -49,7 +49,7 @@ typedef struct job job_t;
 */
 class Worker {
 public:
-    Worker(job_t* job, FileRWLock* fileLock, std::vector<message>* messages, FileRWLock* messageLock);
+    Worker(job_t* job, FileRWLock* fileLock, BulletinBoardSystem* bbs, FileRWLock* messageLock);
     ~Worker();
 
     void workerMain();
@@ -57,8 +57,7 @@ public:
 private:
 
     FileRWLock* fileLock;
-    //address of the vector variable of messages
-    std::vector<message>* messages;
+    BulletinBoardSystem* bbs;
 
     FileRWLock* messageLock;
 

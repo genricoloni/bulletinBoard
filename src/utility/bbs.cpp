@@ -1,11 +1,4 @@
-#include "../utility/bbs.hpp"
-
-BulletinBoardSystem::BulletinBoardSystem() {
-    nextId = 0;
-}
-
-BulletinBoardSystem::~BulletinBoardSystem() {
-}
+/*#include "../utility/bbs.hpp"
 
 void BulletinBoardSystem::Add(const std::string& title, const std::string& author, const std::string& body) {
     message m;
@@ -37,3 +30,21 @@ message BulletinBoardSystem::Get(const int mid) {
     m.id = -1;
     return m;
 }
+
+std::vector<uint8_t> BulletinBoardSystem::serialize(const message msg) {
+    ssize_t buffer_size = msg.author.size() + msg.body.size() + msg.title.size();
+    std::vector<uint8_t> buffer(buffer_size);
+
+    ssize_t position = 0;
+
+    std::copy(msg.author.begin(), msg.author.end(), buffer.begin() + position);
+    position += msg.author.size();
+
+    std::copy(msg.body.begin(), msg.body.end(), buffer.begin() + position);
+    position += msg.body.size();
+
+    std::copy(msg.title.begin(), msg.title.end(), buffer.begin() + position);
+    position += msg.title.size();
+
+    return buffer;
+}*/

@@ -3,7 +3,7 @@
 
 FileRWLock::FileRWLock(const std::string& filename) : filename(filename), readersCount(0), writerPresent(false), mtx() {}
 
-FileRWLock::FileRWLock(const std::vector<message> messages) : readersCount(0), writerPresent(false), mtx(), messages(messages) {}
+FileRWLock::FileRWLock() : readersCount(0), writerPresent(false), mtx() {}
 
 bool FileRWLock::openForRead() {
       #ifdef DEBUG
