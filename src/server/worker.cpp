@@ -64,7 +64,6 @@ void Worker::workerMain(){
         userSocket = job->queue.front();
         job->queue.erase(job->queue.begin());
 
-        printf("Handling user\n");
         
         try
         {
@@ -474,7 +473,158 @@ void Worker::initiateProtocol() {
 };
 
 bool Worker::login() {
+    bool success = false;
+
+    //receive message with username and empty email
+    std::vector<uint8_t> userMessage(ProtocolM4Reg_Usr::GetSize());
+
+    try {
+        this->receiveMessage(userMessage, ProtocolM4Reg_Usr::GetSize());
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+
+    #ifdef DEBUG
+        printf("Received M4 from client\n");
+    #endif
+
+    ProtocolM4Reg_Usr m4Reg_Usr = ProtocolM4Reg_Usr::deserialize(userMessage);
+
+    #ifdef DEBUG
+        printf("Deserialized M4\n");
+        printf("Username: %s\n", m4Reg_Usr.username.c_str());
+        printf("Email: %s\n", m4Reg_Usr.email.c_str());
+    #endif
+
+    //check if username is in use
+    if (!checkUsername(m4Reg_Usr.username)) {
+        #ifdef DEBUG
+            printf("Username not found\n");
+        #endif
+
+        ProtocolM4Response response(USR_NOT_FOUND);
+        std::vector<uint8_t> serializedResponse = response.serialize();
+
+        try {
+            workerSend(serializedResponse);
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+
+        return false;
+    }
+
+    //send ACK and wait for password
+    ProtocolM4Response response(ACK);
+
+    std::vector<uint8_t> serializedResponse = response.serialize();
+    
+    try {
+        workerSend(serializedResponse);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+
+    //receive message with password
+    std::vector<uint8_t> buffer(sessionMessage::get_size(PWD_MESSAGE1_SIZE));
+
+    try {
+        this->receiveMessage(buffer, sessionMessage::get_size(PWD_MESSAGE1_SIZE));
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+
+    #ifdef DEBUG
+        printf("Received password from client\n");
+    #endif
+
+    sessionMessage message = sessionMessage::deserialize(buffer, PWD_MESSAGE1_SIZE);
+
+    std::memset(buffer.data(), 0, buffer.size());
+    buffer.clear();
+
+    #ifdef DEBUG
+        printf("Deserialized password message\n");
+    #endif
+
+    std::vector<uint8_t> plaintext(PWD_MESSAGE1_SIZE);
+    message.decrypt(this->sessionKey, plaintext);
+
+    #ifdef DEBUG
+        printf("Decrypted password message\n");
+    #endif
+
+    PasswordMessage pwdMessage = PasswordMessage::deserialize(plaintext);
+
+    #ifdef DEBUG
+        printf("Deserialized password message\n");
+    #endif
+
+    #ifdef DEBUG
+        printf("Received password: \n");
+        for(int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
+            printf("%02x", pwdMessage.password[i]);
+        }
+        printf("\n");
+    #endif
+
+    if (!checkPassword(m4Reg_Usr.username, pwdMessage.password)) {
+        #ifdef DEBUG
+            printf("Password mismatch\n");
+        #endif
+
+        std::memset(pwdMessage.password, 0, HASHED_PASSWORD_SIZE);
+        std::memset(m4Reg_Usr.username.data(), 0, m4Reg_Usr.username.size());
+        std::memset(m4Reg_Usr.email.data(), 0, m4Reg_Usr.email.size());
+        m4Reg_Usr.username.clear();
+        m4Reg_Usr.email.clear();
+
+        ProtocolM4Response response(WRONG_PASSWORD);
+        std::vector<uint8_t> serializedResponse = response.serialize();
+
+        try {
+            workerSend(serializedResponse);
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+
+        //clear the response message
+        std::memset(serializedResponse.data(), 0, serializedResponse.size());
+        serializedResponse.clear();
+
+        return false;
+    } 
+
+    #ifdef DEBUG
+        printf("Password correct\n");
+    #endif
+
+    std::memset(pwdMessage.password, 0, HASHED_PASSWORD_SIZE);
+    std::memset(m4Reg_Usr.username.data(), 0, m4Reg_Usr.username.size());
+    std::memset(m4Reg_Usr.email.data(), 0, m4Reg_Usr.email.size());
+    m4Reg_Usr.username.clear();
+    m4Reg_Usr.email.clear();
+
+    ProtocolM4Response ack(ACK);
+
+    std::vector<uint8_t> serializedAck = ack.serialize();
+
+    try {
+        workerSend(serializedAck);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+
     return true;
+
+
+
 }
 
 bool Worker::registerUser() {
@@ -625,6 +775,8 @@ bool Worker::registerUser() {
     #ifdef DEBUG
         printf("TOTP code: %s\n", totpCode.c_str());
     #endif
+
+    printf("TOTP code: %s\n", totpCode.c_str());
 
     //wait for client to send OTP
     std::vector<uint8_t> serializedOTP(sessionMessage::get_size(OTP_SIZE));
@@ -812,4 +964,65 @@ bool Worker::writeUser(const std::string& username, const std::string& email, co
 
     file.close();
     return true;
+}
+
+bool Worker::checkPassword(const std::string& username, const uint8_t* password) {
+    //open the file
+    std::ifstream file("res/users/users.txt");
+
+    //convert the password to a string
+    std::string pwd;
+    for (int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
+        pwd += std::to_string(password[i]);
+    }
+
+
+    if (!file.is_open()) {
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        //split the line until the first ,
+        std::string delimiter = ",";
+        std::string user = line.substr(0, line.find(delimiter));
+
+        if (user == username) {
+            //split the line until the second ,
+            line = line.substr(line.find(delimiter) + 1);
+            std::string mail = line.substr(0, line.find(delimiter));
+
+            //split the line until the third ,
+            line = line.substr(line.find(delimiter) + 1);
+            std::uint8_t* pwd = new std::uint8_t[HASHED_PASSWORD_SIZE];
+            for (int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
+                std::string byte = line.substr(i * 2, 2);
+                pwd[i] = std::stoi(byte, nullptr, 16);
+            }
+
+
+            #ifdef DEBUG
+                printf("Password from file: \n");
+                for (int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
+                    printf("%02x", pwd[i]);
+                }
+                printf("\n");
+                printf("Password from client: \n");
+                for (int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
+                    printf("%02x", password[i]);
+                }
+                printf("\n");
+            #endif
+
+            if (std::memcmp(pwd, password, HASHED_PASSWORD_SIZE) == 0) {
+                file.close();
+                return true;
+            }
+
+            delete[] pwd;
+        }
+    }
+
+    file.close();
+    return false;
 }

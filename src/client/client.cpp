@@ -85,7 +85,7 @@ void Client::receiveFromServer(std::vector<uint8_t>& message) {
 
 void Client::initiateProtocol(uint32_t mode) {
     #ifdef DEBUG
-    printf("Initiating communication to create secure connection\n");
+    printf("DEBUG>> Initiating communication to create secure connection\n");
     #endif
 
     //create the DiffieHellman object
@@ -109,7 +109,7 @@ void Client::initiateProtocol(uint32_t mode) {
     //serialize EPHEMERAL KEY
 
     #ifdef DEBUG
-    printf("EPH key generated\n");
+    printf("DEBUG>> EPH key generated\n");
     #endif
 
 
@@ -130,7 +130,7 @@ void Client::initiateProtocol(uint32_t mode) {
     }
 
     #ifdef DEBUG
-    printf("EPH key serialized\n");
+    printf("DEBUG>> EPH key serialized\n");
     #endif
 
     ProtocolM1 m1(serializedEPHKey, serializedEPHKey.size());
@@ -154,7 +154,7 @@ void Client::initiateProtocol(uint32_t mode) {
     }
 
     #ifdef DEBUG
-    printf("M1 sent\n");
+    printf("DEBUG>> M1 sent\n");
     #endif
 
     std::vector<uint8_t> serializedM2(ProtocolM2::GetSize());
@@ -248,7 +248,7 @@ void Client::initiateProtocol(uint32_t mode) {
     }
 
     #ifdef DEBUG
-    printf("HMAC key generated\n");
+    printf("DEBUG>> HMAC key generated\n");
     #endif
 
     std::memcpy(this->sessionKey.data(), keys.data(), (keys.size() / 2) * sizeof(uint8_t));
@@ -258,7 +258,7 @@ void Client::initiateProtocol(uint32_t mode) {
     keys.clear();
 
     #ifdef DEBUG
-    printf("Session key and HMAC key generated\n");
+    printf("DEBUG>> Session key and HMAC key generated\n");
     #endif
 
     //prepare <g^a, g^b> for the server
@@ -329,7 +329,7 @@ void Client::initiateProtocol(uint32_t mode) {
     }
 
     #ifdef DEBUG
-    printf("Signature encrypted\n");
+    printf("DEBUG>> Signature encrypted\n");
     #endif
 
     std::vector<uint8_t> decryptedSignature;
@@ -438,7 +438,7 @@ void Client::initiateProtocol(uint32_t mode) {
     }
     
     #ifdef DEBUG
-    printf("M3 sent\n");
+    printf("DEBUG>> M3 sent\n");
     #endif
 
     if(mode == LOGIN_CODE){
@@ -446,21 +446,141 @@ void Client::initiateProtocol(uint32_t mode) {
         login();
     } else if(mode == REGISTER_CODE){
         //call the register function
-        registerUser();
+        if (!registerUser()) {
+            std::cerr << "Registration failed" << std::endl;
+            return;
+        }
+
+        //call the login function
+        login();
+        
     } else {
         std::cerr << "Invalid mode" << std::endl;
         throw std::runtime_error("Invalid mode");
     }
+
+    return;
     
 };
 
 bool Client::login(){
     #ifdef DEBUG
-    printf("Login function\n");
+    printf("DEBUG>> Login function\n");
     #endif
+    printf("LOGIN\n");
 
     bool success = false;
 
+
+    std::string username;
+    std::string password;
+
+    //get the username
+    printf("Insert username: ");
+    std::cin >> username;
+    getchar();
+
+    //copy the username to the class variable
+    memset(this->username.data(), 0, this->username.size());
+    this->username = std::string(username);
+
+    //get the password
+    char ch;
+    printf("Insert password: ");
+    //turnOffEcho();
+    do {
+        ch = getchar();
+        if (ch == 127) {
+            if (!password.empty()) {
+                password.pop_back();
+                std::cout << "\b \b";
+            }
+        } else if (ch == '\n' || ch == '\r') {
+            break;
+        } else {
+            password += ch;
+            std::cout << "*";
+        }  
+    } while (ch != '\n' && ch != '\r' && password.size() < PASSWORD_MAX_SIZE);
+
+    //turnOnEcho();
+
+    #ifdef DEBUG
+    printf("DEBUG>> Password inserted: %s\n", password.c_str());
+    #endif
+
+    //prepare the message with the username and empty email
+    ProtocolM4Reg_Usr m4(username, "");
+
+    std::vector<uint8_t> serializedM4;
+    serializedM4 = m4.serialize();
+
+    try {
+        sendToServer(serializedM4);
+        #ifdef DEBUG
+        printf("M4 sent\n");
+        #endif
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(serializedM4.data(), 0, serializedM4.size());
+        serializedM4.clear();
+
+        throw std::runtime_error("Error sending message to server");
+    }
+
+    //receive the message from the server
+    std::vector<uint8_t> serializedM4Response(ProtocolM4Response::GetSize());
+
+    try {
+        receiveFromServer(serializedM4Response);
+
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(serializedM4Response.data(), 0, serializedM4Response.size());
+        serializedM4Response.clear();
+
+        throw std::runtime_error("Error receiving message from server");
+    }
+
+    ProtocolM4Response m4Response = ProtocolM4Response::deserialize(serializedM4Response);
+    std::memset(serializedM4Response.data(), 0, serializedM4Response.size());
+    serializedM4Response.clear();
+
+    if (m4Response.response == USR_NOT_FOUND) {
+        std::cerr << "Username not found" << std::endl;
+        return success;
+    }
+
+    //send the password
+    sendPassword(password);
+
+    //receive the message from the server
+    std::vector<uint8_t> serializedM4Response1(ProtocolM4Response::GetSize());
+
+    try {
+        receiveFromServer(serializedM4Response1);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(serializedM4Response1.data(), 0, serializedM4Response1.size());
+        serializedM4Response1.clear();
+
+        throw std::runtime_error("Error receiving message from server");
+    }
+
+    ProtocolM4Response m4Response1 = ProtocolM4Response::deserialize(serializedM4Response1);
+    std::memset(serializedM4Response1.data(), 0, serializedM4Response1.size());
+
+    if (m4Response1.response == WRONG_PASSWORD) {
+        std::cerr << "Wrong password" << std::endl;
+        return success;
+    }
+
+    if (m4Response1.response == ACK) {
+        success = true;
+        printf("Login successful: welcome %s\n", username.c_str());
+    } else {
+        std::cerr << "Login failed" << std::endl;
+    }
     
 }
 
@@ -488,7 +608,7 @@ void Client::turnOnEcho() {
 
 bool Client::registerUser(){
     #ifdef DEBUG
-    printf("Register function\n");
+    printf("DEBUG>> Register function\n");
     #endif
 
     bool success = false;
@@ -512,7 +632,7 @@ bool Client::registerUser(){
     getchar();
 
     #ifdef DEBUG
-    printf("Username and mail inserted\n"); 
+    printf("DEBUG>> Username and mail inserted\n"); 
     printf("Username: %s\n", username.c_str());
     printf("Mail: %s\n", mail.c_str());
     #endif
@@ -597,13 +717,13 @@ bool Client::registerUser(){
     //turnOnEcho();
 
     #ifdef DEBUG
-    printf("Password inserted: %s\n", password.c_str());
+    printf("DEBUG>> Password inserted: %s\n", password.c_str());
     #endif
 
     sendPassword(password);
 
     #ifdef DEBUG
-    printf("Password sent\n");
+    printf("DEBUG>> Password sent\n");
     #endif
 
     //sent a message to the server with the OTP
@@ -633,7 +753,7 @@ bool Client::registerUser(){
     }
 
     #ifdef DEBUG
-    printf("OTP sent\n");
+    printf("DEBUG>> OTP sent\n");
     #endif
 
     //receive the response from the server
@@ -663,12 +783,6 @@ bool Client::registerUser(){
         std::cerr << "Registration failed" << std::endl;
     }
 
-
-
-
-
-
-
     return success;
 }
 
@@ -682,26 +796,26 @@ void Client::sendPassword(std::string password) {
     message.serialize(plaintext);
 
     #ifdef DEBUG
-    printf("Password message serialized\n");
+    printf("DEBUG>> Password message serialized\n");
     #endif
 
     sessionMessage sessionMessage(this->sessionKey, this->hmacKey, plaintext);
 
     #ifdef DEBUG
-    printf("created session message\n");
+    printf("DEBUG>> created session message\n");
     #endif
 
     std::memset(plaintext.data(), 0, plaintext.size());
     plaintext.clear();
 
     #ifdef DEBUG
-    printf("Serializing session message\n");
+    printf("DEBUG>> Serializing session message\n");
     #endif
 
     std::vector<uint8_t> serializedSessionMessage = sessionMessage.serialize();
 
     #ifdef DEBUG
-    printf("Password message serialized\n");
+    printf("DEBUG>> Password message serialized\n");
     #endif
 
     try {
@@ -718,7 +832,7 @@ void Client::sendPassword(std::string password) {
     }
 
     #ifdef DEBUG
-    printf("Password message sent\n");
+    printf("DEBUG>> Password message sent\n");
     #endif
 
     return;
