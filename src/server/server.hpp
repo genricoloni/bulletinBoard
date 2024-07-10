@@ -7,6 +7,7 @@
 
 #include <thread>
 #include <csignal>
+#include <vector>
 
 #include "../const.hpp"
 #include "worker.hpp"
@@ -26,6 +27,8 @@ public:
 
     FileRWLock* fileLock;
 
+    std::vector<message>* messages;
+    FileRWLock* messageLock;
 
 
 

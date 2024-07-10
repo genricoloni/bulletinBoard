@@ -10,6 +10,14 @@ Server::Server(int port, int workerCount, volatile sig_atomic_t* signal_caught) 
 
     FileRWLock* fileLock = new FileRWLock("res/keys/private/server.pem");
     this->fileLock = fileLock;
+
+    //create the vector of messages
+    std::vector<message>messages = std::vector<message>();
+    //put the address of the vector in the messages variable
+    this->messages = &messages;
+
+    FileRWLock* messageLock = new FileRWLock(messages);
+    this->messageLock = messageLock;
     
     return;
 }
@@ -64,7 +72,7 @@ void Server::acceptClient() {
 
     for (int i = 0; i < workerCount; i++) {
         //new worker
-        Worker* worker = new Worker(jobs, fileLock);
+        Worker* worker = new Worker(jobs, fileLock, messages, messageLock);
         workers.push_back(worker);
         workerThreads.emplace_back([&worker]() { worker->workerMain(); });
     

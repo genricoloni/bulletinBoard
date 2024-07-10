@@ -48,7 +48,7 @@ typedef struct job job_t;
 */
 class Worker {
 public:
-    Worker(job_t* job, FileRWLock* fileLock);
+    Worker(job_t* job, FileRWLock* fileLock, std::vector<message>* messages, FileRWLock* messageLock);
     ~Worker();
 
     void workerMain();
@@ -56,6 +56,10 @@ public:
 private:
 
     FileRWLock* fileLock;
+    //address of the vector variable of messages
+    std::vector<message>* messages;
+
+    FileRWLock* messageLock;
 
     job_t* job;
     std::vector<uint8_t> iv;

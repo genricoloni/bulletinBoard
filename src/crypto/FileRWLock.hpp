@@ -5,6 +5,8 @@
 #include <condition_variable>
 #include <mutex>
 #include <string>
+#include <vector>
+#include "../utility/bbs.hpp"
 
 class FileRWLock {
 private:
@@ -13,9 +15,11 @@ private:
   std::mutex mtx;
   std::condition_variable cvReaders, cvWriter;
   std::string filename;
+  std::vector<message> messages;
 
 public:
   FileRWLock(const std::string& filename);
+  FileRWLock(const std::vector<message> messages);
 
   // Reader functions
   bool openForRead();
