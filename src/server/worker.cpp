@@ -1,11 +1,14 @@
 #include "worker.hpp"
 
-Worker::Worker(job_t* job, FileRWLock* fileLock){
+Worker::Worker(job_t* job, FileRWLock* fileLock, std::vector<message>* messages, FileRWLock* messageLock){
     this->job = job;
     this->iv.resize(AES_BLOCK_SIZE);
     this->hmacKey.resize(SESSION_KEY_LENGTH);
     this->sessionKey.resize(SESSION_KEY_LENGTH);
     this->fileLock = fileLock;
+    this->messages = messages;
+    this->messageLock = messageLock;
+
 }
 
 Worker::~Worker(){
