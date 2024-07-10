@@ -446,7 +446,7 @@ void Worker::initiateProtocol() {
                 throw std::runtime_error("Login failed");
             }
         } 
-        if (m3.mode == REGISTER_CODE) {
+        else if (m3.mode == REGISTER_CODE) {
             //register
             if (!registerUser()) {
                 throw std::runtime_error("Register failed");
@@ -456,7 +456,12 @@ void Worker::initiateProtocol() {
             if (!login()) {
                 throw std::runtime_error("Login failed");
             }
-        }
+    } else {
+        std::memset(serializedM3.data(), 0, serializedM3.size());
+        serializedM3.clear();
+
+        throw std::runtime_error("Invalid mode");
+    }
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         throw std::runtime_error("Error handling client request");
@@ -468,6 +473,10 @@ void Worker::initiateProtocol() {
 
     std::memset(serializedM3.data(), 0, serializedM3.size());
     serializedM3.clear();
+
+    //
+
+
 
     
 };
@@ -850,17 +859,6 @@ bool Worker::registerUser() {
         printf("Received OTP: %s\n", std::string(otpPlaintext.begin(), otpPlaintext.end()).c_str());
     #endif
 
-    //send response to client
-    ProtocolM4Response result = ProtocolM4Response(ACK);
-
-    std::vector<uint8_t> serializedResult = result.serialize();
-
-    try {
-        workerSend(serializedResult);
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << '\n';
-        return false;
-    }
 
     #ifdef DEBUG
         printf("Sent response to client %d\n", ntohs(userAddress.sin_port));
@@ -870,6 +868,18 @@ bool Worker::registerUser() {
     //write user to file
     if (!writeUser(m4Reg_Usr.username, m4Reg_Usr.email, pwdMessage.password)) {
         std::cerr << "Error writing user to file\n";
+        return false;
+    }
+
+    //send response to client
+    ProtocolM4Response result = ProtocolM4Response(ACK);
+
+    std::vector<uint8_t> serializedResult = result.serialize();
+
+    try {
+        workerSend(serializedResult);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
         return false;
     }
         
@@ -1025,4 +1035,12 @@ bool Worker::checkPassword(const std::string& username, const uint8_t* password)
 
     file.close();
     return false;
+}
+
+void Worker::waitForRequest(){
+    while (true)
+    {
+        /* code */
+    }
+    
 }
