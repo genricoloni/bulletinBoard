@@ -15,7 +15,6 @@
 #include <condition_variable>
 
 
-#include "../crypto/SHA512.hpp"
 #include "../crypto/secureProtocol.hpp"
 #include "../crypto/diffieHellman.hpp"
 #include "../crypto/RSASignature.hpp"

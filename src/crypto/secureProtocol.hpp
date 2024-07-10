@@ -7,6 +7,7 @@
 
 #include <arpa/inet.h>
 #include <openssl/rand.h>
+#include "../crypto/SHA512.hpp"
 
 #include "../const.hpp"
 
@@ -363,24 +364,47 @@ struct ProtocolM4Response{
 };
 
 struct PasswordMessage {
-    uint8_t password[PASSWORD_MAX_SIZE];
+    uint8_t password[HASHED_PASSWORD_SIZE];
     uint32_t counter;
 
     PasswordMessage() {}
 
     PasswordMessage(const char* password, uint32_t counter) 
     {
-        memset(this->password, 0, PASSWORD_MAX_SIZE);
-        memcpy(this->password, password, PASSWORD_MAX_SIZE);
-        this->counter = counter;
+        //data sanitization of the password string
+        if (strlen(password) > PASSWORD_MAX_SIZE) {
+            throw std::invalid_argument("Password is too long");
+        }
+        //check for whitespaces, special characters, endlines, etc
+        for (int i = 0; i < strlen(password); i++) {
+            if (password[i] < 32 || password[i] > 126) {
+                printf("Invalid character: %c\n", password[i]);
+                throw std::invalid_argument("Invalid character in password");
+            }
+        }
+
+        memset(&this->password, 0, HASHED_PASSWORD_SIZE);
+        std::vector<uint8_t> hash(HASHED_PASSWORD_SIZE);
+        unsigned int digestLength = HASHED_PASSWORD_SIZE;
+        SHA512::generateHash((const unsigned char*)password, strlen(password), hash, digestLength);
+        #ifdef DEBUG
+        //print the hex representation of the hash
+        for (int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
+            printf("%02x", hash[i]);
+        }
+        printf("\n");
+        #endif
+        std::memcpy(this->password, hash.data(), HASHED_PASSWORD_SIZE);
+        this->counter = counter;     
+        
     }
 
     void serialize(std::vector<uint8_t>& buffer) 
     {
         ssize_t position = 0;
 
-        std::memcpy(buffer.data(), this->password, PASSWORD_MAX_SIZE);
-        position += PASSWORD_SIZE;
+        std::memcpy(buffer.data(), this->password, HASHED_PASSWORD_SIZE);
+        position += HASHED_PASSWORD_SIZE;
 
         this->counter = htonl(this->counter);
         #ifdef DEBUG
@@ -388,6 +412,7 @@ struct PasswordMessage {
         std::cout << "Counter Network: " << htonl(this->counter) << std::endl;
         #endif
         std::memcpy(buffer.data() + position, &this->counter, sizeof(uint32_t));
+        
     }
 
     static PasswordMessage deserialize(const std::vector<uint8_t>& buffer) 
@@ -396,8 +421,8 @@ struct PasswordMessage {
 
         ssize_t position = 0;
 
-        std::memcpy(passwordMessage.password, buffer.data(), PASSWORD_MAX_SIZE);
-        position += PASSWORD_SIZE;
+        std::memcpy(passwordMessage.password, buffer.data(), HASHED_PASSWORD_SIZE);
+        position += HASHED_PASSWORD_SIZE;
 
         std::memcpy(&passwordMessage.counter, buffer.data() + position, sizeof(uint32_t));
 

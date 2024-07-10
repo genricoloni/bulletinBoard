@@ -584,11 +584,15 @@ bool Client::registerUser(){
                 password.pop_back();
                 std::cout << "\b \b";
             }
+        } else if (ch == '\n' || ch == '\r') {
+            break;
         } else {
             password += ch;
             std::cout << "*";
-        }
+        }  
     } while (ch != '\n' && ch != '\r' && password.size() < PASSWORD_MAX_SIZE);
+
+
 
     //turnOnEcho();
 
@@ -620,13 +624,25 @@ void Client::sendPassword(std::string password) {
 
     PasswordMessage message(password.c_str(), this->counter);
 
-    std::vector<uint8_t> serializedMessage(PWD_MESSAGE1_SIZE);
-    message.serialize(serializedMessage);
+    std::vector<uint8_t> plaintext(PWD_MESSAGE1_SIZE);
+    message.serialize(plaintext);
 
-    sessionMessage sessionMessage(this->sessionKey, this->hmacKey, serializedMessage);
+    #ifdef DEBUG
+    printf("Password message serialized\n");
+    #endif
 
-    std::memset(serializedMessage.data(), 0, serializedMessage.size());
-    serializedMessage.clear();
+    sessionMessage sessionMessage(this->sessionKey, this->hmacKey, plaintext);
+
+    #ifdef DEBUG
+    printf("created session message\n");
+    #endif
+
+    std::memset(plaintext.data(), 0, plaintext.size());
+    plaintext.clear();
+
+    #ifdef DEBUG
+    printf("Serializing session message\n");
+    #endif
 
     std::vector<uint8_t> serializedSessionMessage = sessionMessage.serialize();
 

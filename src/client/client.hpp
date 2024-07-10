@@ -16,7 +16,6 @@
 #include "../crypto/diffieHellman.hpp"
 #include "../crypto/secureProtocol.hpp"
 #include "../crypto/RSASignature.hpp"
-#include "../crypto/SHA512.hpp"
 #include "../crypto/sessionMessage.hpp"
 #include "../crypto/AESCBC.hpp"
 

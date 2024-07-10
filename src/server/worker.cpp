@@ -589,7 +589,6 @@ bool Worker::registerUser() {
         printf("Received password message\n");
         printf("Counter Network: %d\n", pwdMessage.counter);
         printf("Counter : %d\n", htonl(pwdMessage.counter));
-        printf("Password: %s\n", pwdMessage.password);
     #endif
 
     checkCounter(ntohl(pwdMessage.counter));
@@ -599,9 +598,14 @@ bool Worker::registerUser() {
     std::string password(pwdMessage.password, pwdMessage.password + 30);
 
     #ifdef DEBUG
-        printf("Password: %s\n", password.c_str());
+    //print the hex of the password
+    for (int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
+        printf("%02x", pwdMessage.password[i]);
+    }
+    printf("\n");
     #endif
     
+    //
 
 
 
