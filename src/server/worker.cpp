@@ -452,12 +452,25 @@ void Worker::initiateProtocol() {
             if (!registerUser()) {
                 throw std::runtime_error("Register failed");
             }
+
+            //after registration, handle the login request
+            if (!login()) {
+                throw std::runtime_error("Login failed");
+            }
         }
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         throw std::runtime_error("Error handling client request");
     }
+    
+    #ifdef DEBUG
+        printf("Client request handled\n");
+    #endif
 
+    std::memset(serializedM3.data(), 0, serializedM3.size());
+    serializedM3.clear();
+
+    
 };
 
 bool Worker::login() {
@@ -701,9 +714,13 @@ bool Worker::registerUser() {
         printf("Sent response to client %d\n", ntohs(userAddress.sin_port));
     #endif
 
-    
 
-    
+    //write user to file
+    if (!writeUser(m4Reg_Usr.username, m4Reg_Usr.email, pwdMessage.password)) {
+        std::cerr << "Error writing user to file\n";
+        return false;
+    }
+        
 
     return true;
 
@@ -767,4 +784,32 @@ bool Worker::checkEmail(const std::string& email) {
 
     file.close();
     return false;
+}
+
+bool Worker::writeUser(const std::string& username, const std::string& email, const uint8_t* password){
+    std::ofstream file("res/users/users.txt", std::ios::app);
+
+    #ifdef DEBUG
+        printf("Writing user to file\n");
+    #endif
+    if (!file.is_open()) {
+        return false;
+    }
+
+    file << username << "," << email << ",";
+    #ifdef DEBUG
+        printf("Wrote username and email\n");
+    #endif
+    for (int i = 0; i < HASHED_PASSWORD_SIZE; i++) {
+        file << std::hex << std::setw(2) << std::setfill('0') << (int)password[i];
+    }
+    #ifdef DEBUG
+        printf("Wrote password\n");
+    #endif
+
+    file << std::endl;
+
+
+    file.close();
+    return true;
 }

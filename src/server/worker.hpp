@@ -81,5 +81,5 @@ private:
     bool checkUsername(const std::string& username);
     bool checkEmail(const std::string& email);
     void checkCounter(uint32_t counter);
-
+    bool writeUser(const std::string& username, const std::string& email, const uint8_t* hashedPassword);
 };

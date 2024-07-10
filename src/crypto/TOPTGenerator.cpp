@@ -83,5 +83,10 @@ std::string TOTPGenerator::generateTOTP(uint64_t timeStep) const {
 
     uint32_t otp = binary % 1000000;
 
+    //if the otp is less than 6 digits, add zeros to the left
+    if (otp < 100000) {
+        return "0" + std::to_string(otp);
+    }
+
     return std::to_string(otp);
 }
