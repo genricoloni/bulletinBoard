@@ -27,10 +27,6 @@
 #define LOGIN_SUCCESS 30
 #define REGISTER_SUCCESS 31
 
-#define LIST_REQUEST 40
-#define GET_REQUEST 41
-#define ADD_REQUEST 42
-
 #define USER_MAX_SIZE 16
 #define MAIL_MAX_SIZE 32
 #define PASSWORD_MAX_SIZE 8
@@ -47,3 +43,10 @@
 #define DECRYPTED_SIGNATURE_SIZE 256
 
 #define PWD_MESSAGE1_SIZE       HASHED_PASSWORD_SIZE*sizeof(uint8_t) + sizeof(uint32_t)
+
+#define ID_SIZE sizeof(uint32_t)
+#define NAME_SIZE USER_MAX_SIZE*sizeof(uint8_t)
+#define MAX_TITLE_SIZE 64
+#define MAX_BODY_SIZE 256
+
+#define MAX_MESSAGE_SIZE ID_SIZE + NAME_SIZE + MAX_TITLE_SIZE + MAX_BODY_SIZE

@@ -18,6 +18,9 @@ struct message {
     std::string body;
 };
 
+//typedef of the message struct
+typedef struct message message;
+
 /* bulletin board class */
 class BulletinBoardSystem {
 public:

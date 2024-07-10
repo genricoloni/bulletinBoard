@@ -18,6 +18,7 @@
 #include "../crypto/RSASignature.hpp"
 #include "../crypto/sessionMessage.hpp"
 #include "../crypto/AESCBC.hpp"
+#include "../utility/bbs.hpp"
 
 
 class Client {
