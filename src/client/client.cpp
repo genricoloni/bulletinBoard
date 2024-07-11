@@ -860,9 +860,10 @@ void Client::list(int n){
     sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);
     #ifdef DEBUG
     printf("DEBUG>> Session message created\n");
-    printf("DEBUG>> Session key: %s\n", this->sessionKey.data());
-    printf("DEBUG>> HMAC key: %s\n", this->hmacKey.data());
-    printf("DEBUG>> serializedCode: %s\n", serializedCode.data());
+    printf("DEBUG>> Code: %d\n", code);
+    printf("DEBUG>> IV: %s\n", s1.iv.data());
+    printf("DEBUG>> Ciphertext: %s\n", s1.ciphertext.data());
+    printf("DEBUG>> HMAC: %s\n", s1.hmac.data());
     #endif
 
     std::vector<uint8_t> serializedSessionMessage = s1.serialize();
