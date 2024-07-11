@@ -124,26 +124,7 @@ ssize_t Worker::workerSend(const std::vector<uint8_t>& buffer) {
     return sentBytes;
 }
 
-ssize_t Worker::workerReceive(std::vector<uint8_t>& buffer, ssize_t bufferSize) {
-    ssize_t receivedBytes = 0;
 
-    while (receivedBytes < bufferSize) {
-        ssize_t n = recv(userSocket, reinterpret_cast<unsigned char*>(&buffer.data()[receivedBytes]), bufferSize - receivedBytes, 0);
-
-        if(receivedBytes == -1)
-            throw std::runtime_error("Error reading from socket");
-
-        if(receivedBytes == 0){
-            char message[sizeof("Client disconnected (socket: )") + sizeof(int)] = {0};
-            sprintf(message, "Client disconnected (socket: %d)", userSocket);
-            throw std::runtime_error(message);
-        }
-
-        receivedBytes += n;
-    }
-    
-    return receivedBytes;
-}
 
 void Worker::initiateProtocol() {
     //allocate space for message M1
@@ -1089,8 +1070,12 @@ void Worker::waitForRequest(){
     while (true) {
         std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(uint32_t)));
 
+        #ifdef DEBUG
+            printf("DEBUG>> buffer size: %ld\n", buffer.size());
+        #endif
+
         try {
-            workerReceive(buffer, sessionMessage::get_size(sizeof(uint32_t)));
+            receiveMessage(buffer, sessionMessage::get_size(sizeof(uint32_t)));
         } catch (const std::exception &e) {
             std::cerr << e.what() << '\n';
             return;
@@ -1098,52 +1083,136 @@ void Worker::waitForRequest(){
 
         sessionMessage sessionMsg = sessionMessage::deserialize(buffer, sizeof(uint32_t));
 
-        std::memset(buffer.data(), 0, buffer.size());
-        buffer.clear();
-
-        std::vector<uint8_t> plaintext(sizeof(uint32_t));
-        sessionMsg.decrypt(this->sessionKey, plaintext);
-
-        uint32_t request = *reinterpret_cast<uint32_t*>(plaintext.data());
-
-        std::memset(plaintext.data(), 0, plaintext.size());
-        plaintext.clear();
-
         #ifdef DEBUG
-            printf("DEBUG>> Received request: %d\n", request);
+            printf("DEBUG>> Received session message\n");
         #endif
 
-        switch (request) {
-            case LIST_REQUEST:
-                ProtocolM4Response ack = ProtocolM4Response(ACK);
-                std::vector<uint8_t> serializedAck = ack.serialize();
+        std::vector<uint8_t> plaintext(sessionMessage::get_size(sizeof(uint32_t)));
+        sessionMsg.decrypt(this->sessionKey, plaintext);
 
-                try {
-                    workerSend(serializedAck);
-                } catch (const std::exception &e) {
-                    std::cerr << e.what() << '\n';
-                    return;
-                }
 
-                std::memset(serializedAck.data(), 0, serializedAck.size());
-                serializedAck.clear();
+        uint32_t msg = ntohl(*reinterpret_cast<uint32_t*>(plaintext.data()));
 
+        #ifdef DEBUG
+            printf("DEBUG>> Received request: %d\n", msg);
+        #endif
+
+
+        switch(msg) {
+            case LIST_CODE:
+            
+                sendAck();
                 ListHandler();
                 break;
-            case GET_REQUEST:
-                
+
+            case ADD_CODE:
+                sendAck();
+                AddHandler();
                 break;
-            case ADD_REQUEST:
-                
-                break;
-            default:
-                break;
+
         }
     }
 }
 
-void Worker::AddHandler(const std::string& title, const std::string& author, const std::string& body) {
-    bbs->Add(title, author, body);
+void Worker::sendAck(){
+    ProtocolM4Response ack(ACK);
+    std::vector<uint8_t> serializedAck = ack.serialize();
+
+    try {
+        workerSend(serializedAck);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return;
+    }
+
+    std::memset(serializedAck.data(), 0, serializedAck.size());
+    serializedAck.clear();
+}
+
+void Worker::AddHandler() {
+    #ifdef DEBUG
+        printf("DEBUG>> AddHandler\n");
+    #endif
+    //prepare a buffer to receive a session message
+    std::vector<uint8_t> buffer(sessionMessage::get_size(MAX_MESSAGE_SIZE));
+
+    try {
+        receiveMessage(buffer, sessionMessage::get_size(MAX_MESSAGE_SIZE));
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return;
+    }
+
+    #ifdef DEBUG
+        printf("DEBUG>> Received message\n");
+    #endif
+
+    sessionMessage session_msg = sessionMessage::deserialize(buffer, MAX_MESSAGE_SIZE);
+
+    std::vector<uint8_t> plaintext(sessionMessage::get_size(MAX_MESSAGE_SIZE));
+    session_msg.decrypt(this->sessionKey, plaintext);
+
+
+
+    #ifdef DEBUG
+        printf("DEBUG>> Deserialized message\n");
+        printf("ID: %d\n", plaintext[0]);
+        //address of plaintext[0]
+        printf("Address of ID: %p\n", &plaintext[0]);
+        void* Daddress = &plaintext[0];
+        printf("Author: %s\n", reinterpret_cast<char*>(Daddress + sizeof(uint32_t)));
+    #endif
+
+    void* address = &plaintext[0];
+    #ifdef DEBUG
+        printf("DEBUG>> Address of plaintext: %p\n", address);
+    #endif
+
+
+
+    std::string author(reinterpret_cast<char*>(address + sizeof(uint32_t)));
+
+    #ifdef DEBUG
+        printf("DEBUG>> Author: %s\n", author.c_str());
+    #endif
+
+
+    address = address + sizeof(uint32_t) + NAME_SIZE*sizeof(uint8_t);
+
+    //title
+    std::string title(reinterpret_cast<char*>(address));
+
+    #ifdef DEBUG
+        printf("DEBUG>> Title: %s\n", title.c_str());
+    #endif
+
+
+    address = address + sizeof(uint8_t) * MAX_TITLE_SIZE;
+
+    //body
+    std::string body(reinterpret_cast<char*>(address));
+
+    #ifdef DEBUG
+        printf("DEBUG>> Body: %s\n", body.c_str());
+        printf("DEBUG>> Message deserialized\n");
+    #endif
+
+
+    message msg = message(plaintext[0], author, title, body);    
+
+
+    #ifdef DEBUG
+        printf("DEBUG>> MEssage inside msg:\n");
+        printf("ID: %d\n", msg.id);
+        printf("Author: %s\n", msg.author.c_str());
+        printf("Title: %s\n", msg.title.c_str());
+        printf("Body: %s\n", msg.body.c_str());
+    #endif
+
+    return;
+
+
+
 }
 
 void Worker::GetHandler(const int mid) {
@@ -1170,7 +1239,7 @@ void Worker::GetHandler(const int mid) {
 void Worker::ListHandler() {
     std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(uint32_t)));
     try {
-        this->workerReceive(buffer, sessionMessage::get_size(sizeof(uint32_t)));
+        receiveMessage(buffer, sessionMessage::get_size(sizeof(uint32_t)));
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return;
@@ -1182,13 +1251,13 @@ void Worker::ListHandler() {
     response.decrypt(this->sessionKey, plaintext);
 
     #ifdef DEBUG
-        printf("DEBUG>> Decrypted message %s\n", response.getPayload().c_str());
+        printf("DEBUG>> Decrypted message %s\n", response);
     #endif
 
     std::memset(plaintext.data(), 0, plaintext.size());
     plaintext.clear();
 
-    sessionMessage session_msg;
+    /*sessionMessage session_msg;
     std::vector<message> messages = bbs->List(n);
 
     // iterate through the messages and serialize them into a single string to send to the client.
@@ -1212,5 +1281,5 @@ void Worker::ListHandler() {
     }
 
     std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
-    serializedSessionMessage.clear();
+    serializedSessionMessage.clear();*/
 }

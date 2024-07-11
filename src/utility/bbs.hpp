@@ -12,10 +12,16 @@
 
 /* message struct that represent the messages to write in the bulletin: id, author, title and body */
 struct message {
-    int id;
-    std::string title;
+    uint32_t id;
     std::string author;
+    std::string title;
     std::string body;
+
+    message() {}
+
+    message(uint32_t id, std::string author, std::string title, std::string body) : id(id), author(author), title(title), body(body) {}
+
+    ~message() {}
 };
 
 //typedef of the message struct

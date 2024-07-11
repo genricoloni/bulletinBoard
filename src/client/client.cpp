@@ -853,12 +853,22 @@ void Client::list(int n){
     //prepare the message with the code 
     //using a normal session message
     std::vector<uint8_t> serializedCode(sizeof(LIST_CODE));
-    uint32_t code = htonl(LOGIN_CODE);
+    uint32_t code = htonl(LIST_CODE);
 
+    std::memcpy(serializedCode.data(), &code, sizeof(code));
 
-    sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);
+    sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);    
+
+    #ifdef DEBUG
+    printf("DEBUG>> Size of the unserialized message: %d\n", sizeof(s1));
+    #endif
 
     std::vector<uint8_t> serializedSessionMessage = s1.serialize();
+
+    
+    #ifdef DEBUG
+    printf("DEBUG>> Size of serialized message: %d\n", sizeof(serializedSessionMessage));
+    #endif
 
     try {
         sendToServer(serializedSessionMessage);
@@ -1000,15 +1010,19 @@ void Client::list(int n){
 }
 
 void Client::add(){
-    //prepare the message with the code 
-    //using a normal session message
     std::vector<uint8_t> serializedCode(sizeof(ADD_CODE));
     uint32_t code = htonl(ADD_CODE);
 
+    std::memcpy(serializedCode.data(), &code, sizeof(code));
 
-    sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);
+    sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);    
+
+    #ifdef DEBUG
+    printf("DEBUG>> Size of the unserialized message: %d\n", sizeof(s1));
+    #endif
 
     std::vector<uint8_t> serializedSessionMessage = s1.serialize();
+
 
     try {
         sendToServer(serializedSessionMessage);
@@ -1072,25 +1086,55 @@ void Client::add(){
     m.title = title;
     m.body = body;
 
+    //padding to reach the maximum size
+    if (m.title.size() < MAX_TITLE_SIZE) {
+        m.title.resize(MAX_TITLE_SIZE, '\0');
+    }
+
+    if (m.body.size() < MAX_BODY_SIZE) {
+        m.body.resize(MAX_BODY_SIZE, '\0');
+    }
+
+    if (m.author.size() < NAME_SIZE) {
+        m.author.resize(NAME_SIZE, '\0');
+    }
+
     //serialize the message
     std::vector<uint8_t> serializedMessage(MAX_MESSAGE_SIZE);
     int i = 0;
+    
+    #ifdef DEBUG
+    m.id = 22;
+    #endif
 
-    *reinterpret_cast<uint32_t*>(serializedMessage.data() + i) = htonl(m.id);
+    std::memcpy(serializedMessage.data() + i, &m.id, sizeof(uint32_t));
     i += sizeof(uint32_t);
 
     std::memcpy(serializedMessage.data() + i, m.author.c_str(), m.author.size());
-    i += m.author.size() + 1;
+    i += NAME_SIZE;
 
     std::memcpy(serializedMessage.data() + i, m.title.c_str(), m.title.size());
-    i += m.title.size() + 1;
+    i += MAX_TITLE_SIZE;
 
     std::memcpy(serializedMessage.data() + i, m.body.c_str(), m.body.size());
-    i += m.body.size() + 1;
+    i += MAX_BODY_SIZE;
 
     sessionMessage s2(this->sessionKey, this->hmacKey, serializedMessage);
 
+    #ifdef DEBUG
+    printf("DEBUG>> ID: %d\n", serializedMessage[0]);
+    printf("DEBUG>> Author: %s\n", reinterpret_cast<char*>(serializedMessage.data() + sizeof(uint32_t)));
+    printf("DEBUG>> Title: %s\n", reinterpret_cast<char*>(serializedMessage.data() + sizeof(uint32_t) + NAME_SIZE));
+    printf("DEBUG>> Body: %s\n", reinterpret_cast<char*>(serializedMessage.data() + sizeof(uint32_t) + NAME_SIZE + MAX_TITLE_SIZE));
+    #endif
+
+    //encrypt the message
+    std::vector<uint8_t> ciphertext(MAX_MESSAGE_SIZE);
+    
+
     std::vector<uint8_t> serializedSessionMessage1 = s2.serialize();
+
+
 
     try {
         sendToServer(serializedSessionMessage1);
