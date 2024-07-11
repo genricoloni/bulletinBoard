@@ -92,7 +92,9 @@ private:
     bool checkPassword(const std::string& username, const uint8_t* hashedPassword);
 
     void waitForRequest();
-    void AddHandler(const std::string& title, const std::string& author, const std::string& body);
+    void AddHandler();
     void ListHandler();
     void GetHandler(const int mid);
+
+    void sendAck();
 };

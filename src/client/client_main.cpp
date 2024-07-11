@@ -146,6 +146,7 @@ int main(int argc, char *argv[]) {
         case ADD_CODE:
             //add
             printf("Add\n");
+            client.add();
             getchar();
 
             break;
