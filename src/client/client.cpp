@@ -855,6 +855,11 @@ void Client::list(int n){
     std::vector<uint8_t> serializedCode(sizeof(LIST_CODE));
     uint32_t code = htonl(LOGIN_CODE);
 
+    std::memcpy(serializedCode.data(), &code, sizeof(code));
+    #ifdef DEBUG
+    printf("DEBUG>> Code prepared %s\n", serializedCode.data());
+    #endif
+
     sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);
 
     std::vector<uint8_t> serializedSessionMessage = s1.serialize();
