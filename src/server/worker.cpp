@@ -1162,7 +1162,7 @@ void Worker::ListHandler() {
     printf("DEBUG>> Received size: %d\n", sizeof(buffer));
     #endif
 
-    sessionMessage response = sessionMessage::deserialize(buffer, sessionMessage::get_size(sizeof(uint32_t)));
+    sessionMessage response = sessionMessage::deserialize(buffer, sizeof(uint32_t));
 
     #ifdef DEBUG
     printf("DEBUG>> Size of deserialized response: %d\n", sizeof(response));
