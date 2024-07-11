@@ -128,11 +128,15 @@ ssize_t Worker::workerReceive(std::vector<uint8_t>& buffer, ssize_t bufferSize) 
     ssize_t receivedBytes = 0;
 
     while (receivedBytes < bufferSize) {
+        #ifdef DEBUG
+            printf("DEBUG>> bufferSize %ld\n", bufferSize);
+        #endif
+
         ssize_t n = recv(userSocket, reinterpret_cast<unsigned char*>(&buffer.data()[receivedBytes]), bufferSize - receivedBytes, 0);
 
         #ifdef DEBUG
             printf("DEBUG>> Received %ld bytes\n", n);
-        #endif
+        #endif 
 
         if(receivedBytes == -1)
             throw std::runtime_error("Error reading from socket");
@@ -1094,7 +1098,7 @@ void Worker::waitForRequest(){
         std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(uint32_t)));
 
         try {
-            workerReceive(buffer, sessionMessage::get_size(sizeof(uint32_t)));
+            workerReceive(buffer, sessionMessage::get_size(sizeof(LIST_CODE)));
         } catch (const std::exception &e) {
             std::cerr << e.what() << '\n';
             return;
