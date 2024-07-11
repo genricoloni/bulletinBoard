@@ -130,6 +130,10 @@ ssize_t Worker::workerReceive(std::vector<uint8_t>& buffer, ssize_t bufferSize) 
     while (receivedBytes < bufferSize) {
         ssize_t n = recv(userSocket, reinterpret_cast<unsigned char*>(&buffer.data()[receivedBytes]), bufferSize - receivedBytes, 0);
 
+        #ifdef DEBUG
+            printf("DEBUG>> Received %ld bytes\n", n);
+        #endif
+
         if(receivedBytes == -1)
             throw std::runtime_error("Error reading from socket");
 
