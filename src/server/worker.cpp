@@ -1245,17 +1245,19 @@ void Worker::ListHandler() {
         return;
     }
 
-    sessionMessage response = sessionMessage::deserialize(buffer, sessionMessage::get_size(sizeof(uint32_t)));
+    sessionMessage session_msg = sessionMessage::deserialize(buffer, sizeof(uint32_t));
 
     std::vector<uint8_t> plaintext(sessionMessage::get_size(sizeof(uint32_t)));
-    response.decrypt(this->sessionKey, plaintext);
+    session_msg.decrypt(this->sessionKey, plaintext);
 
-    #ifdef DEBUG
-        printf("DEBUG>> Decrypted message %s\n", response);
-    #endif
+    uint32_t n = ntohl(*reinterpret_cast<uint32_t*>(plaintext.data()));
 
     std::memset(plaintext.data(), 0, plaintext.size());
     plaintext.clear();
+
+    #ifdef DEBUG
+        printf("DEBUG>> Received n: %d\n", n);
+    #endif
 
     /*sessionMessage session_msg;
     std::vector<message> messages = bbs->List(n);
