@@ -1095,7 +1095,7 @@ bool Worker::checkPassword(const std::string& username, const uint8_t* password)
 
 void Worker::waitForRequest(){
     while (true) {
-        std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(uint32_t)));
+        std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(LIST_CODE)));
 
         try {
             workerReceive(buffer, sessionMessage::get_size(sizeof(LIST_CODE)));
