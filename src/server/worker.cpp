@@ -1097,11 +1097,18 @@ void Worker::waitForRequest(){
             printf("DEBUG>> Received request: %d\n", ntohl(msg));
         #endif
 
+        uint32_t request = ntohl(msg);
 
-        switch(msg) {
+        switch(request) {
             case LIST_CODE:
+                #ifdef DEBUG
+                printf("DEBUG>> Starting the List operation...\n");
+                #endif
                 ProtocolM4Response ack(ACK);
                 std::vector<uint8_t> serializedAck = ack.serialize();
+                #ifdef DEBUG
+                printf("DEBUG>> Size of serialized ACK: %d\n",sizeof(serializedAck));
+                #endif
 
                 try {
                     workerSend(serializedAck);
@@ -1152,14 +1159,19 @@ void Worker::ListHandler() {
         std::cerr << e.what() << '\n';
         return;
     }
+    #ifdef DEBUG
+    printf("DEBUG>> Received size: %d\n", sizeof(buffer));
+    #endif
 
     sessionMessage response = sessionMessage::deserialize(buffer, sessionMessage::get_size(sizeof(uint32_t)));
 
     std::vector<uint8_t> plaintext(sessionMessage::get_size(sizeof(uint32_t)));
     response.decrypt(this->sessionKey, plaintext);
 
+    uint32_t msg = *reinterpret_cast<uint32_t*>(plaintext.data());
+    
     #ifdef DEBUG
-        printf("DEBUG>> Decrypted message %s\n", response);
+        printf("DEBUG>> Decrypted message %d\n", ntohl(msg));
     #endif
 
     std::memset(plaintext.data(), 0, plaintext.size());

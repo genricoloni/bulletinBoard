@@ -914,7 +914,7 @@ void Client::list(int n){
     
 
     //send the number of messages to list
-    std::vector<uint8_t> serializedN(sizeof(n));
+    std::vector<uint8_t> serializedN(sizeof(uint32_t));
     uint32_t n1 = htonl(n);
 
     std::memcpy(serializedN.data(), &n1, sizeof(n1));
