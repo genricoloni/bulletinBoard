@@ -124,34 +124,7 @@ ssize_t Worker::workerSend(const std::vector<uint8_t>& buffer) {
     return sentBytes;
 }
 
-ssize_t Worker::workerReceive(std::vector<uint8_t>& buffer, ssize_t bufferSize) {
-    ssize_t receivedBytes = 0;
 
-    while (receivedBytes < bufferSize) {
-        #ifdef DEBUG
-            printf("DEBUG>> bufferSize %ld\n", bufferSize);
-        #endif
-
-        ssize_t n = recv(userSocket, reinterpret_cast<unsigned char*>(&buffer.data()[receivedBytes]), bufferSize - receivedBytes, 0);
-
-        #ifdef DEBUG
-            printf("DEBUG>> Received %ld bytes\n", n);
-        #endif 
-
-        if(receivedBytes == -1)
-            throw std::runtime_error("Error reading from socket");
-
-        if(receivedBytes == 0){
-            char message[sizeof("Client disconnected (socket: )") + sizeof(int)] = {0};
-            sprintf(message, "Client disconnected (socket: %d)", userSocket);
-            throw std::runtime_error(message);
-        }
-
-        receivedBytes += n;
-    }
-    
-    return receivedBytes;
-}
 
 void Worker::initiateProtocol() {
     //allocate space for message M1
@@ -1095,10 +1068,14 @@ bool Worker::checkPassword(const std::string& username, const uint8_t* password)
 
 void Worker::waitForRequest(){
     while (true) {
-        std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(LIST_CODE)));
+        std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(uint32_t)));
+
+        #ifdef DEBUG
+            printf("DEBUG>> buffer size: %ld\n", buffer.size());
+        #endif
 
         try {
-            workerReceive(buffer, sessionMessage::get_size(sizeof(LIST_CODE)));
+            receiveMessage(buffer, sessionMessage::get_size(sizeof(uint32_t)));
         } catch (const std::exception &e) {
             std::cerr << e.what() << '\n';
             return;
@@ -1108,25 +1085,20 @@ void Worker::waitForRequest(){
 
         #ifdef DEBUG
             printf("DEBUG>> Received session message\n");
-            printf("DEBUG>> Session message: %s\n", sessionMsg);
         #endif
 
-        std::memset(buffer.data(), 0, buffer.size());
-        buffer.clear();
-
-        std::vector<uint8_t> plaintext(sizeof(uint32_t));
+        std::vector<uint8_t> plaintext(sessionMessage::get_size(sizeof(uint32_t)));
         sessionMsg.decrypt(this->sessionKey, plaintext);
 
-        uint32_t request = *reinterpret_cast<uint32_t*>(plaintext.data());
 
-        std::memset(plaintext.data(), 0, plaintext.size());
-        plaintext.clear();
+        uint32_t msg = *reinterpret_cast<uint32_t*>(plaintext.data());
 
         #ifdef DEBUG
-            printf("DEBUG>> Received request: %d\n", request);
+            printf("DEBUG>> Received request: %d\n", ntohl(msg));
         #endif
 
-        switch(request) {
+
+        switch(msg) {
             case LIST_CODE:
                 ProtocolM4Response ack(ACK);
                 std::vector<uint8_t> serializedAck = ack.serialize();
@@ -1175,7 +1147,7 @@ void Worker::GetHandler(const int mid) {
 void Worker::ListHandler() {
     std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(uint32_t)));
     try {
-        this->workerReceive(buffer, sessionMessage::get_size(sizeof(uint32_t)));
+        receiveMessage(buffer, sessionMessage::get_size(sizeof(uint32_t)));
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return;

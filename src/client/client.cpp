@@ -859,7 +859,13 @@ void Client::list(int n){
 
     sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);    
 
+    #ifdef DEBUG
+    printf("DEBUG>> Size of the unserialized message: %d\n", sizeof(s1));
+    #endif
+
     std::vector<uint8_t> serializedSessionMessage = s1.serialize();
+
+    
     #ifdef DEBUG
     printf("DEBUG>> Size of serialized message: %d\n", sizeof(serializedSessionMessage));
     #endif
