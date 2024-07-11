@@ -1100,7 +1100,7 @@ void Worker::waitForRequest(){
 
         #ifdef DEBUG
             printf("DEBUG>> Received session message\n");
-            printf("DEBUG>> Session message: %s\n", sessionMsg)
+            printf("DEBUG>> Session message: %s\n", sessionMsg);
         #endif
 
         std::memset(buffer.data(), 0, buffer.size());
