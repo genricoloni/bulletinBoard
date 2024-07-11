@@ -858,13 +858,6 @@ void Client::list(int n){
     std::memcpy(serializedCode.data(), &code, sizeof(code));
 
     sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);
-    #ifdef DEBUG
-    printf("DEBUG>> Session message created\n");
-    printf("DEBUG>> Code: %d\n", code);
-    printf("DEBUG>> IV: %s\n", s1.iv.data());
-    printf("DEBUG>> Ciphertext: %s\n", s1.ciphertext.data());
-    printf("DEBUG>> HMAC: %s\n", s1.hmac.data());
-    #endif
 
     std::vector<uint8_t> serializedSessionMessage = s1.serialize();
 

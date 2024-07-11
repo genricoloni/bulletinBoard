@@ -1098,6 +1098,11 @@ void Worker::waitForRequest(){
 
         sessionMessage sessionMsg = sessionMessage::deserialize(buffer, sizeof(uint32_t));
 
+        #ifdef DEBUG
+            printf("DEBUG>> Received session message\n");
+            printf("DEBUG>> Session message: %s\n", sessionMsg)
+        #endif
+
         std::memset(buffer.data(), 0, buffer.size());
         buffer.clear();
 
