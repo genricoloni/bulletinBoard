@@ -849,7 +849,7 @@ void Client::IncrementCounter() {
 }
  
 
-void Client::list(int n){
+void Client::list(uint32_t n){
     //prepare the message with the code 
     //using a normal session message
     std::vector<uint8_t> serializedCode(sizeof(LIST_CODE));
@@ -914,8 +914,12 @@ void Client::list(int n){
     
 
     //send the number of messages to list
-    std::vector<uint8_t> serializedN(sizeof(uint32_t));
+    std::vector<uint8_t> serializedN(sizeof(n));
     uint32_t n1 = htonl(n);
+    #ifdef DEBUG
+    printf("DEBUG>> Sending number %d\n", n);
+    printf("DEBUG>> Size of the number: %d\n", sizeof(n1));
+    #endif
 
     std::memcpy(serializedN.data(), &n1, sizeof(n1));
 
@@ -923,6 +927,9 @@ void Client::list(int n){
 
     std::vector<uint8_t> serializedSessionMessage1 = s2.serialize();
 
+    #ifdef DEBUG
+    printf("DEBUG>> Size of serialized M1: %d\n", sizeof(serializedSessionMessage1));
+    #endif
     try {
         sendToServer(serializedSessionMessage1);
         std::memset(serializedSessionMessage1.data(), 0, serializedSessionMessage1.size());

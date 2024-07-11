@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
         case LIST_CODE:
             //list
             printf("Enter the number of messages to list\n");
-            int n;
+            uint32_t n;
             std::cin >> n;
 
             client.list(n);

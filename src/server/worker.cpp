@@ -1090,7 +1090,6 @@ void Worker::waitForRequest(){
         std::vector<uint8_t> plaintext(sessionMessage::get_size(sizeof(uint32_t)));
         sessionMsg.decrypt(this->sessionKey, plaintext);
 
-
         uint32_t msg = *reinterpret_cast<uint32_t*>(plaintext.data());
 
         #ifdef DEBUG
@@ -1164,6 +1163,10 @@ void Worker::ListHandler() {
     #endif
 
     sessionMessage response = sessionMessage::deserialize(buffer, sessionMessage::get_size(sizeof(uint32_t)));
+
+    #ifdef DEBUG
+    printf("DEBUG>> Size of deserialized response: %d\n", sizeof(response));
+    #endif
 
     std::vector<uint8_t> plaintext(sessionMessage::get_size(sizeof(uint32_t)));
     response.decrypt(this->sessionKey, plaintext);

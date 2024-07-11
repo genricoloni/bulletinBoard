@@ -36,7 +36,7 @@ public:
     bool login();
     bool registerUser();
 
-    void list(int n);
+    void list(uint32_t n);
     void get(int mID);
     void add();
 
