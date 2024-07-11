@@ -93,6 +93,6 @@ private:
 
     void waitForRequest();
     void AddHandler(const std::string& title, const std::string& author, const std::string& body);
-    void ListHandler(const int n);
+    void ListHandler();
     void GetHandler(const int mid);
 };
