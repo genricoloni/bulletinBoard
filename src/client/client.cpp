@@ -856,11 +856,19 @@ void Client::list(int n){
     uint32_t code = htonl(LOGIN_CODE);
 
     std::memcpy(serializedCode.data(), &code, sizeof(code));
+
     #ifdef DEBUG
-    printf("DEBUG>> Code prepared %s\n", serializedCode.data());
+    printf("DEBUG>> Code prepared %s\n", code);
     #endif
 
     sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);
+    #ifdef DEBUG
+    printf("DEBUG>> Session message created\n");
+    printf("DEBUG>> Session key: %s\n", this->sessionKey.data());
+    printf("DEBUG>> HMAC key: %s\n", this->hmacKey.data());
+    printf("DEBUG>> serializedCode: %s\n", serializedCode.data());
+    s1.print();
+    #endif
 
     std::vector<uint8_t> serializedSessionMessage = s1.serialize();
 
