@@ -1113,9 +1113,9 @@ void Worker::waitForRequest(){
             printf("DEBUG>> Received request: %d\n", request);
         #endif
 
-        switch (request) {
-            case LIST_REQUEST:
-                ProtocolM4Response ack = ProtocolM4Response(ACK);
+        switch(request) {
+            case LIST_CODE:
+                ProtocolM4Response ack(ACK);
                 std::vector<uint8_t> serializedAck = ack.serialize();
 
                 try {
@@ -1129,14 +1129,6 @@ void Worker::waitForRequest(){
                 serializedAck.clear();
 
                 ListHandler();
-                break;
-            case GET_REQUEST:
-                
-                break;
-            case ADD_REQUEST:
-                
-                break;
-            default:
                 break;
         }
     }
@@ -1182,13 +1174,13 @@ void Worker::ListHandler() {
     response.decrypt(this->sessionKey, plaintext);
 
     #ifdef DEBUG
-        printf("DEBUG>> Decrypted message %s\n", response.getPayload().c_str());
+        printf("DEBUG>> Decrypted message %s\n", response);
     #endif
 
     std::memset(plaintext.data(), 0, plaintext.size());
     plaintext.clear();
 
-    sessionMessage session_msg;
+    /*sessionMessage session_msg;
     std::vector<message> messages = bbs->List(n);
 
     // iterate through the messages and serialize them into a single string to send to the client.
@@ -1212,5 +1204,5 @@ void Worker::ListHandler() {
     }
 
     std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
-    serializedSessionMessage.clear();
+    serializedSessionMessage.clear();*/
 }

@@ -129,8 +129,7 @@ int main(int argc, char *argv[]) {
 
         case LIST_CODE:
             //list
-            printf("List\n");
-            getchar();
+            sessionMessage(this->iv, this->hmacKey, uint32_t(LIST_CODE));            
             break;
 
         case GET_CODE:
