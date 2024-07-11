@@ -853,13 +853,16 @@ void Client::list(int n){
     //prepare the message with the code 
     //using a normal session message
     std::vector<uint8_t> serializedCode(sizeof(LIST_CODE));
-    uint32_t code = htonl(LOGIN_CODE);
+    uint32_t code = htonl(LIST_CODE);
 
     std::memcpy(serializedCode.data(), &code, sizeof(code));
 
-    sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);
+    sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);    
 
     std::vector<uint8_t> serializedSessionMessage = s1.serialize();
+    #ifdef DEBUG
+    printf("DEBUG>> Size of serialized message: %d\n", sizeof(serializedSessionMessage));
+    #endif
 
     try {
         sendToServer(serializedSessionMessage);
