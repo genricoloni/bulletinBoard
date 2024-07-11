@@ -129,8 +129,11 @@ int main(int argc, char *argv[]) {
 
         case LIST_CODE:
             //list
-            printf("List\n");
-            getchar();
+            print("Enter the number of messages to list\n");
+            int n;
+            std::cin >> n;
+
+            client.list(n);
             break;
 
         case GET_CODE:

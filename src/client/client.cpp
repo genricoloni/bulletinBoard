@@ -855,7 +855,6 @@ void Client::list(int n){
     std::vector<uint8_t> serializedCode(sizeof(LIST_CODE));
     uint32_t code = htonl(LOGIN_CODE);
 
-
     sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);
 
     std::vector<uint8_t> serializedSessionMessage = s1.serialize();
