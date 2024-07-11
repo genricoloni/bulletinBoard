@@ -129,7 +129,11 @@ int main(int argc, char *argv[]) {
 
         case LIST_CODE:
             //list
-            sessionMessage(this->iv, this->hmacKey, uint32_t(LIST_CODE));            
+            print("Enter the number of messages to list\n");
+            int n;
+            std::cin >> n;
+
+            client.list(n);
             break;
 
         case GET_CODE:
