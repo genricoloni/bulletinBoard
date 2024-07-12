@@ -1,4 +1,4 @@
-/*#include "../utility/bbs.hpp"
+/*#include "../utility/bbs.hpp"zz
 
 void BulletinBoardSystem::Add(const std::string& title, const std::string& author, const std::string& body) {
     message m;

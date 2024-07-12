@@ -15,6 +15,7 @@
 #define GENERIC_ERROR_ON_REGISTER -55
 #define OTP_MISMATCH -56
 #define ACK 1
+#define NACK -1
 
 #define BASE_CODE 20
 #define EXIT_CODE 20

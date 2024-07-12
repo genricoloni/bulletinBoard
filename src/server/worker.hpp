@@ -93,7 +93,8 @@ private:
     void waitForRequest();
     void AddHandler();
     void ListHandler();
-    void GetHandler(const int mid);
+    void GetHandler();
 
     void sendAck();
+    void sendError();
 };

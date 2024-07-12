@@ -149,7 +149,6 @@ int main(int argc, char *argv[]) {
             int mID;
             std::cout << "Enter the message ID to get\n";
             std::cin >> mID;
-            getchar();
 
             //sanitize the input
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -157,7 +156,8 @@ int main(int argc, char *argv[]) {
             #ifdef DEBUG
             printf("DEBUG>> Inserted message ID: %d\n", mID);
             #endif
-            //client.get(mID);
+            client.get(mID);
+            getchar();
   
             break;
 
@@ -173,6 +173,7 @@ int main(int argc, char *argv[]) {
             std::cout << "Invalid command. Press any key to continue" << std::endl;
             getchar();
 
+        getchar();
         //clean the command buffer
         std::memset(command, 0, 256);
 
