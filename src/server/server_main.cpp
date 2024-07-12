@@ -17,7 +17,7 @@ void signal_handler(int signal){
 int main(int argc, char const *argv[]){
     printf("Starting server\n");
 
-    int number_of_workers = argc > 1 ? std::stoi(argv[1]) : MIN_WORKERS;
+    int number_of_workers = argc > 2 ? std::stoi(argv[2]) : MIN_WORKERS;
 
     if (number_of_workers < MIN_WORKERS){
         std::cerr << "Invalid number of workers, setting to minimum\n";
@@ -29,9 +29,11 @@ int main(int argc, char const *argv[]){
         number_of_workers = MAX_WORKERS;
     }
 
+    int port = argc > 1 ? std::stoi(argv[1]) : SERVER_PORT;
+
     try {
 
-        Server server(8080, number_of_workers, &signal_caught);
+        Server server(port, number_of_workers, &signal_caught);
         printf("Server started\n");
 
         //wait for user input
