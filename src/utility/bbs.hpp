@@ -30,7 +30,7 @@ typedef struct message message;
 /* bulletin board class */
 class BulletinBoardSystem {
 public:
-    BulletinBoardSystem() : nextId(0) {};
+    BulletinBoardSystem() : nextId(1) {};
     ~BulletinBoardSystem();
 
     void Add(const std::string& title, const std::string& author, const std::string& body){
@@ -79,10 +79,10 @@ public:
 
     void printHead(){
         printf("DEBUG>> Bulletin Board System\n");
-        printf("ID>> %d", messages.front().id);
-        printf("Author>> %s\n", messages.front().author.c_str());
-        printf("Title>> %s\n", messages.front().title.c_str());
-        printf("Body>> %s\n", messages.front().body.c_str());
+        printf("\tID>> %d", messages.front().id);
+        printf("\tAuthor>> %s\n", messages.front().author.c_str());
+        printf("\tTitle>> %s\n", messages.front().title.c_str());
+        printf("\tBody>> %s\n", messages.front().body.c_str());
     }
 private:
     std::vector<message> messages;

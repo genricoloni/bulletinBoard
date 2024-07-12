@@ -116,10 +116,9 @@ void Server::acceptClient() {
         #endif
 
 
-        {//accept client
-        std::lock_guard<std::mutex> lock(jobs->mutex);
+
         jobs->queue.push_back(userSocket);
-        }
+        
   
 
         jobs->cv.notify_one();
