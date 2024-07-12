@@ -21,6 +21,8 @@ struct message {
 
     message(uint32_t id, std::string author, std::string title, std::string body) : id(id), author(author), title(title), body(body) {}
 
+    message(const message &m) : id(m.id), author(m.author), title(m.title), body(m.body) {}
+
     ~message() {}
 };
 
@@ -42,6 +44,7 @@ public:
         messages.insert(messages.begin(),m);
         nextId++;
     }
+
     std::vector<message> List(const int n) {
         std::vector<message> lastNMessages;
         for (int i = 0; i < n && i < messages.size(); i++) {
@@ -49,16 +52,27 @@ public:
         }
         return lastNMessages;
     }
-    message Get(const int mid) {
+
+    message Get(const uint32_t mid){
+        #ifdef DEBUG
+        printf("DEBUG>> Getting message with id: %d\n", mid);
+        #endif
         for (int i = 0; i < messages.size(); i++) {
             if (messages[i].id == mid) {
+                #ifdef DEBUG
+                printf("DEBUG>> Found message with id: %d\n", mid);
+                #endif
                 return messages[i];
             }
         }
+        #ifdef DEBUG
+        printf("DEBUG>> Message with id: %d not found\n", mid);
+        #endif
         message m;
-        m.id = -1;
+        m.id = 0;
         return m;
     }
+
     std::vector<uint8_t> serialize(const message msg) {
         ssize_t buffer_size = msg.author.size() + msg.body.size() + msg.title.size();
         std::vector<uint8_t> buffer(buffer_size);
