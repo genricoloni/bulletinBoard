@@ -22,8 +22,8 @@
 #include "../const.hpp"
 #include "../crypto/sessionMessage.hpp"
 #include "../utility/FileRWLock.hpp"
-#include "../utility/TOPTGenerator.hpp"
 #include "../utility/bbs.hpp"
+#include "../utility/TOPTGenerator.hpp"
 
 /*
     * Job struct

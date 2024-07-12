@@ -1155,6 +1155,8 @@ void Client::add(){
     return;    
 }
 
-
+void Client::get(int requestedID){
+    
+}
 
    

@@ -1,6 +1,3 @@
-#ifndef FILERWLOCK_HPP
-#define FILERWLOCK_HPP
-
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -32,4 +29,3 @@ public:
   }
 };
 
-#endif // FILERWLOCK_HPP

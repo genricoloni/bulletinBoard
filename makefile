@@ -12,26 +12,26 @@ BIN_CLIENT = client
 BIN_SERVER = server
 
 # Include directories for header files 
-CPPINCLUDE = -I./src/client -I./src/server -I./src/crypto  # Include crypto directory
+CPPINCLUDE = -I./src/client -I./src/server -I./src/crypto  -I./src/utility
 
 ifeq ($(DEBUG), 1)
   CFLAGS += -DDEBUG
 endif
 
 # Target to build the client executable
-client: src/client/*.cpp src/crypto/*.cpp
-	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_CLIENT) src/client/*.cpp src/crypto/*.cpp -lcrypto
+client: src/client/*.cpp src/crypto/*.cpp src/utility/*.cpp
+	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_CLIENT) src/client/*.cpp src/crypto/*.cpp src/utility/*.cpp -lcrypto
 
 # Compile individual client source files into object files
-%.o: src/client/%.cpp src/crypto/%.cpp
+%.o: src/client/%.cpp src/crypto/%.cpp src/utility/%.cpp
 	$(CC) $(CFLAGS) $(CPPINCLUDE) -c $< -o $@  # Create object file
 
 # Target to build the server executable
-server: src/server/*.cpp src/crypto/*.cpp
-	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_SERVER) src/server/*.cpp src/crypto/*.cpp -lcrypto
+server: src/server/*.cpp src/crypto/*.cpp src/utility/*.cpp
+	$(CC) $(CFLAGS) $(CPPINCLUDE) -o bin/$(BIN_SERVER) src/server/*.cpp src/crypto/*.cpp src/utility/*.cpp -lcrypto
 
 # Compile individual server source files into object files
-%.o: src/server/%.cpp src/crypto/%.cpp
+%.o: src/server/%.cpp src/crypto/%.cpp src/utility/%.cpp
 	$(CC) $(CFLAGS) $(CPPINCLUDE) -c $< -o $@  # Create object file
 
 # Build both client and server when "all" is targeted
