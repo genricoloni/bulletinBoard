@@ -44,8 +44,15 @@ public:
     }
     std::vector<message> List(const int n) {
         std::vector<message> lastNMessages;
-        for (int i = 0; i < n && i < messages.size(); i++) {
+        int i = 0;
+        for (i = 0; i < n && i < messages.size(); i++) {
             lastNMessages.push_back(messages[i]);
+        }
+        if (i == 0) {
+            message tmp;
+            tmp.id = 0;
+            lastNMessages.push_back(tmp);
+            return lastNMessages;
         }
         return lastNMessages;
     }
@@ -63,25 +70,7 @@ public:
         //ssize_t buffer_size = sizeof(msg.id) + msg.author.size() + msg.body.size() + msg.title.size();
         std::vector<uint8_t> buffer(MAX_MESSAGE_SIZE);
 
-        ssize_t position = 0;
-
-        //padding to reach the maximum size
-        if (msg.title.size() < MAX_TITLE_SIZE) {
-            msg.title.resize(MAX_TITLE_SIZE, '\0');
-        }
-
-        if (msg.body.size() < MAX_BODY_SIZE) {
-            msg.body.resize(MAX_BODY_SIZE, '\0');
-        }
-
-        if (msg.author.size() < NAME_SIZE) {
-            msg.author.resize(NAME_SIZE, '\0');
-        }
-
-        // copy the msg.id at the beginning of the buffer
-        #ifdef DEBUG
-            printf("DEBUG>> ID: %d\n", &msg.id);
-        #endif
+        int position = 0;
         
         // copy the msg.id at the beginning of the buffer
         std::memcpy(buffer.data() + position, &msg.id, sizeof(uint32_t));

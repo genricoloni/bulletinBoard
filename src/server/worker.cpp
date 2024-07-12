@@ -1251,7 +1251,17 @@ void Worker::ListHandler() {
 
     //sessionMessage session_msg;
     std::vector<message> messages = bbs->List(n);
-
+    uint32_t size = messages.size();
+    std::vector<uint8_t> serializedSize(sizeof(size));
+    std::memcpy(serializedSize.data(), &size, sizeof(size));
+    sessionMessage tmp = sessionMessage(this->sessionKey, this->hmacKey, serializedSize);
+    std::vector<uint8_t> serializedSessionMessageTmp = tmp.serialize();
+    try {
+        workerSend(serializedSessionMessageTmp);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return;
+    }
     // iterate through the messages and serialize them into a single string to send to the client.
     // the messages are separated by a newline character
     // std::string serializedMessages;
@@ -1263,20 +1273,25 @@ void Worker::ListHandler() {
             printf("DEBUG>> Title: %s\n", messages[i].title.c_str());
             printf("DEBUG>> Body: %s\n", messages[i].body.c_str());
         #endif
-        std::vector<uint8_t> serializedMsg1 = bbs->serialize(messages[i]);
-        sessionMessage sessionMsg1 = sessionMessage(this->sessionKey, this->hmacKey, serializedMsg1);
+        std::vector<uint8_t> serializedMsg(MAX_MESSAGE_SIZE);
+        serializedMsg = bbs->serialize(messages[i]);
         
-        std::vector<uint8_t> serializedSessionMessage = sessionMsg1.serialize();
+        sessionMessage sessionMsg = sessionMessage(this->sessionKey, this->hmacKey, serializedMsg);
+        
+        std::vector<uint8_t> serializedSessionMessage1 = sessionMsg.serialize();
 
         try {
-            workerSend(serializedSessionMessage);
+            workerSend(serializedSessionMessage1);
         } catch (const std::exception &e) {
             std::cerr << e.what() << '\n';
             return;
         }
 
-        std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
-        serializedSessionMessage.clear();
+        std::memset(serializedSessionMessage1.data(), 0, serializedSessionMessage1.size());
+        serializedSessionMessage1.clear();
+
+        std::memset(serializedMsg.data(), 0, serializedMsg.size());
+        serializedMsg.clear();
         
         //serializedMessages += std::string(serializedMsg.begin(), serializedMsg.end());
     }
@@ -1284,6 +1299,7 @@ void Worker::ListHandler() {
     #ifdef DEBUG
         printf("DEBUG>> Funziona\n");
     #endif
+    getchar();
     return;
 
     /*std::memset(serializedMessages.data(), 0, serializedMessages.size());
