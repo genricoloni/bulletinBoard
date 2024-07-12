@@ -44,43 +44,32 @@ void Worker::handleUser(){
 
 void Worker::workerMain(){
     while(true){
-        //wait for job
-
-
+    {
         std::unique_lock<std::mutex> lock(job->mutex);
-        job->cv.wait(lock, [&]{ return !job->queue.empty() || job->isDone; });
+        job->cv.wait(lock, [&](){return !job->queue.empty();});
 
         if(job->isDone){
-            printf("Job is done\n");
             return;
         }
-        //print some about the queue
-        #ifdef DEBUG
-            printf("DEBUG>> Handling user\n");
-            printf("DEBUG>> user port: %d\n", ntohs(userAddress.sin_port));
-            printf("DEBUG>> user address: %s\n", inet_ntoa(userAddress.sin_addr));
 
-        #endif
-
-        //get job
         userSocket = job->queue.front();
         job->queue.erase(job->queue.begin());
-
-        
-        try
-        {
-            initiateProtocol();
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << e.what() << '\n';
-        }
-        
-
-
+    
     }
 
+    #ifdef DEBUG
+        printf("DEBUG>> Worker %d handling client\n", ntohs(userAddress.sin_port));
+    #endif
 
+    try {
+        initiateProtocol();
+        waitForRequest();
+
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+    }
+
+    }
 }
 
 ssize_t Worker::receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize) {
@@ -457,8 +446,6 @@ void Worker::initiateProtocol() {
     std::memset(serializedM3.data(), 0, serializedM3.size());
     serializedM3.clear();
 
-    waitForRequest();
-
     
 };
 
@@ -512,6 +499,7 @@ bool Worker::login() {
 
             return false;
         }
+        fileLock->closeForRead();
     }
 
     //send ACK and wait for password
@@ -580,7 +568,6 @@ bool Worker::login() {
             #ifdef DEBUG
                 printf("Password mismatch\n");
             #endif
-            fileLock->closeForRead();
 
             std::memset(pwdMessage.password, 0, HASHED_PASSWORD_SIZE);
             std::memset(m4Reg_Usr.username.data(), 0, m4Reg_Usr.username.size());
@@ -602,8 +589,11 @@ bool Worker::login() {
             std::memset(serializedResponse.data(), 0, serializedResponse.size());
             serializedResponse.clear();
 
+            fileLock->closeForRead();
             return false;
         } 
+        fileLock->closeForRead();
+
     }
 
     #ifdef DEBUG
@@ -1201,13 +1191,13 @@ void Worker::AddHandler() {
     message msg = message(plaintext[0], author, title, body);    
 
 
+
+    bbs->Add(msg.title, msg.author, msg.body);
+
     #ifdef DEBUG
-        printf("DEBUG>> MEssage inside msg:\n");
-        printf("ID: %d\n", msg.id);
-        printf("Author: %s\n", msg.author.c_str());
-        printf("Title: %s\n", msg.title.c_str());
-        printf("Body: %s\n", msg.body.c_str());
+        bbs->printHead();
     #endif
+
 
     return;
 

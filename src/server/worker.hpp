@@ -70,7 +70,6 @@ private:
     const std::string serverPrivateKeyPath = "res/keys/private/server.pem";
 
     ssize_t workerSend(const std::vector<uint8_t>& buffer);
-    ssize_t workerReceive(std::vector<uint8_t>& buffer, ssize_t bufferSize);
     
 
     int userSocket;
