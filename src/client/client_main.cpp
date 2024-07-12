@@ -146,7 +146,18 @@ int main(int argc, char *argv[]) {
         case GET_CODE:
             //get
             printf("Get\n");
+            int mID;
+            std::cout << "Enter the message ID to get\n";
+            std::cin >> mID;
             getchar();
+
+            //sanitize the input
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+            #ifdef DEBUG
+            printf("DEBUG>> Inserted message ID: %d\n", mID);
+            #endif
+            //client.get(mID);
   
             break;
 
