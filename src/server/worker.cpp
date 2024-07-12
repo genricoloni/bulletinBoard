@@ -1209,6 +1209,13 @@ void Worker::AddHandler() {
         printf("Body: %s\n", msg.body.c_str());
     #endif
 
+    bbs->Add(msg.title, msg.author, msg.body);
+
+    #ifdef DEBUG
+        bbs->printHead();
+    #endif
+
+
     return;
 
 

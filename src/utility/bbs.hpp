@@ -76,6 +76,14 @@ public:
 
         return buffer;
     }
+
+    void printHead(){
+        printf("DEBUG>> Bulletin Board System\n");
+        printf("ID>> %d", messages.front().id);
+        printf("Author>> %s\n", messages.front().author.c_str());
+        printf("Title>> %s\n", messages.front().title.c_str());
+        printf("Body>> %s\n", messages.front().body.c_str());
+    }
 private:
     std::vector<message> messages;
     int nextId;
