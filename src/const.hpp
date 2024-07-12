@@ -5,7 +5,7 @@
 #define MIN_PORT 1024
 
 #define MAX_WORKERS 100
-#define MIN_WORKERS 1
+#define MIN_WORKERS 2
 
 #define USR_ALREADY_TAKEN -50
 #define MAIL_ALREADY_TAKEN -51
