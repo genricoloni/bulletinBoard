@@ -21,8 +21,8 @@
 #include "../crypto/AESCBC.hpp"
 #include "../const.hpp"
 #include "../crypto/sessionMessage.hpp"
-#include "../crypto/TOPTGenerator.hpp"
-#include "FileRWLock.hpp" 
+#include "../utility/FileRWLock.hpp"
+#include "../utility/TOPTGenerator.hpp"
 #include "../utility/bbs.hpp"
 
 /*
