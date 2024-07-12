@@ -9,6 +9,11 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    if (atoi(argv[1]) < MIN_PORT || atoi(argv[1]) > MAX_PORT) {
+        printf("Invalid port number. Port number must be between 1024 and 65535\n");
+        exit(1);
+    }
+
     Client client(atoi(argv[1]));
 
     printf("Client started\n");
@@ -65,15 +70,14 @@ int main(int argc, char *argv[]) {
         case LOGIN_CODE:
             //login
             printf("Login\n");
-            client.initiateProtocol(uint32_t(LOGIN_CODE));
-            logged = true;
+            logged = client.initiateProtocol(uint32_t(LOGIN_CODE));
             break;
 
         case REGISTER_CODE:
             //register
             printf("Register\n");
-            client.initiateProtocol(uint32_t(REGISTER_CODE));
-            logged = true;
+            logged = client.initiateProtocol(uint32_t(REGISTER_CODE));
+            
             break;
 
         default:
@@ -88,13 +92,16 @@ int main(int argc, char *argv[]) {
         if (logged) {
             break;
         }
+
+        //clean the command buffer
+        std::memset(command, 0, 256);
     }
     while (true);
 
     do {
         //clear the screen
         system("/bin/clear");
-        std::cout << "Connected to server. Enter a command:\n";
+        std::cout << "Welcome " << client.getUsername() << "! Enter a command:\n";
 
         std::cout << "\t 0. exit\n";
         std::cout << "\t 1. list\n";
@@ -155,7 +162,8 @@ int main(int argc, char *argv[]) {
             std::cout << "Invalid command. Press any key to continue" << std::endl;
             getchar();
 
-            //clean the output buffer
+        //clean the command buffer
+        std::memset(command, 0, 256);
 
             break;
         }

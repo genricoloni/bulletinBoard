@@ -8,7 +8,7 @@ Server::Server(int port, int workerCount, volatile sig_atomic_t* signal_caught) 
     jobs = new job_t();
     jobs->isDone = false;
 
-    FileRWLock* fileLock = new FileRWLock("res/keys/private/server.pem");
+    FileRWLock* fileLock = new FileRWLock("res/users/users.txt");
     this->fileLock = fileLock;
 
     BulletinBoardSystem* bbs = new BulletinBoardSystem();

@@ -40,6 +40,10 @@ public:
     void get(int mID);
     void add();
 
+    std::string getUsername(){
+        return username;
+    }
+
 private:
     int socket;
     int port;
@@ -59,6 +63,8 @@ private:
     void HashPassword(const std::string& password, std::vector<uint8_t>& hashedPassword);
     void sendPassword(std::string password);
     void IncrementCounter();
+
+
 
 
 };
