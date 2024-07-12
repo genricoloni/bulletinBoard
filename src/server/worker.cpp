@@ -1249,29 +1249,45 @@ void Worker::ListHandler() {
         printf("DEBUG>> Received n: %d\n", n);
     #endif
 
-    /*sessionMessage session_msg;
+    //sessionMessage session_msg;
     std::vector<message> messages = bbs->List(n);
 
     // iterate through the messages and serialize them into a single string to send to the client.
     // the messages are separated by a newline character
-    std::string serializedMessages;
+    // std::string serializedMessages;
     for (int i = 0; i < messages.size(); i++) {
-        std::vector<uint8_t> serializedMsg = bbs->serialize(messages[i]);
-        serializedMessages += std::string(serializedMsg.begin(), serializedMsg.end()) + "\n";
+        #ifdef DEBUG
+            printf("DEBUG>> Message %d\n", i);
+            printf("DEBUG>> ID: %d\n", messages[i].id);
+            printf("DEBUG>> Author: %s\n", messages[i].author.c_str());
+            printf("DEBUG>> Title: %s\n", messages[i].title.c_str());
+            printf("DEBUG>> Body: %s\n", messages[i].body.c_str());
+        #endif
+        std::vector<uint8_t> serializedMsg1 = bbs->serialize(messages[i]);
+        sessionMessage sessionMsg1 = sessionMessage(this->sessionKey, this->hmacKey, serializedMsg1);
+        
+        std::vector<uint8_t> serializedSessionMessage = sessionMsg1.serialize();
+
+        try {
+            workerSend(serializedSessionMessage);
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return;
+        }
+
+        std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+        serializedSessionMessage.clear();
+        
+        //serializedMessages += std::string(serializedMsg.begin(), serializedMsg.end());
     }
+
+    #ifdef DEBUG
+        printf("DEBUG>> Funziona\n");
+    #endif
+    return;
+
+    /*std::memset(serializedMessages.data(), 0, serializedMessages.size());
+    serializedMessages.clear();*/
 
     // create a session message with the serialized messages
-    session_msg = sessionMessage(this->sessionKey, this->hmacKey, std::vector<uint8_t>(serializedMessages.begin(), serializedMessages.end()));
-
-    std::vector<uint8_t> serializedSessionMessage = session_msg.serialize();
-
-    try {
-        workerSend(serializedSessionMessage);
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << '\n';
-        return;
-    }
-
-    std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
-    serializedSessionMessage.clear();*/
 }
