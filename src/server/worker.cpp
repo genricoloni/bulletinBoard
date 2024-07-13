@@ -1360,29 +1360,67 @@ void Worker::ListHandler() {
         printf("DEBUG>> Received n: %d\n", n);
     #endif
 
-    /*sessionMessage session_msg;
+    //sessionMessage session_msg;
     std::vector<message> messages = bbs->List(n);
-
-    // iterate through the messages and serialize them into a single string to send to the client.
-    // the messages are separated by a newline character
-    std::string serializedMessages;
-    for (int i = 0; i < messages.size(); i++) {
-        std::vector<uint8_t> serializedMsg = bbs->serialize(messages[i]);
-        serializedMessages += std::string(serializedMsg.begin(), serializedMsg.end()) + "\n";
-    }
-
-    // create a session message with the serialized messages
-    session_msg = sessionMessage(this->sessionKey, this->hmacKey, std::vector<uint8_t>(serializedMessages.begin(), serializedMessages.end()));
-
-    std::vector<uint8_t> serializedSessionMessage = session_msg.serialize();
-
+    uint32_t size = messages.size();
+    #ifdef DEBUG
+        printf("DEBUG>> MEssages found: %d\n", size);
+    #endif
+    uint32_t size1 = ntohl(size);
+    std::vector<uint8_t> serializedSize(sizeof(size));
+    std::memcpy(serializedSize.data(), &size1, sizeof(size1));
+    #ifdef EDBUG
+        printf("DEBUG>> Serialized size: %d\n", serializedSize.data());
+    #endif
+    sessionMessage tmp = sessionMessage(this->sessionKey, this->hmacKey, serializedSize);
+    std::vector<uint8_t> serializedSessionMessageTmp = tmp.serialize();
     try {
-        workerSend(serializedSessionMessage);
+        workerSend(serializedSessionMessageTmp);
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return;
     }
+    // iterate through the messages and serialize them into a single string to send to the client.
+    // the messages are separated by a newline character
+    // std::string serializedMessages;
+    for (int i = 0; i < messages.size(); i++) {
+        #ifdef DEBUG
+            printf("DEBUG>> Message %d\n", i);
+            printf("DEBUG>> ID: %d\n", messages[i].id);
+            printf("DEBUG>> Author: %s\n", messages[i].author.c_str());
+            printf("DEBUG>> Title: %s\n", messages[i].title.c_str());
+            printf("DEBUG>> Body: %s\n", messages[i].body.c_str());
+        #endif
+        std::vector<uint8_t> serializedMsg(MAX_MESSAGE_SIZE);
+        serializedMsg = bbs->serialize(messages[i]);
+        
+        sessionMessage sessionMsg = sessionMessage(this->sessionKey, this->hmacKey, serializedMsg);
+        
+        std::vector<uint8_t> serializedSessionMessage1 = sessionMsg.serialize();
 
-    std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
-    serializedSessionMessage.clear();*/
+        try {
+            workerSend(serializedSessionMessage1);
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << '\n';
+            return;
+        }
+
+        std::memset(serializedSessionMessage1.data(), 0, serializedSessionMessage1.size());
+        serializedSessionMessage1.clear();
+
+        std::memset(serializedMsg.data(), 0, serializedMsg.size());
+        serializedMsg.clear();
+        
+        //serializedMessages += std::string(serializedMsg.begin(), serializedMsg.end());
+    }
+
+    #ifdef DEBUG
+        printf("DEBUG>> Funziona\n");
+    #endif
+    return;
+
+    /*std::memset(serializedMessages.data(), 0, serializedMessages.size());
+    serializedMessages.clear();*/
+
+    // create a session message with the serialized messages
 }

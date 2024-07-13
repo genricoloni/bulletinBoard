@@ -47,16 +47,20 @@ public:
 
     std::vector<message> List(const int n) {
         std::vector<message> lastNMessages;
-        for (int i = 0; i < n && i < messages.size(); i++) {
+        int i = 0;
+        for (i = 0; i < n && i < messages.size(); i++) {
             lastNMessages.push_back(messages[i]);
+        }
+        if (i == 0) {
+            message tmp;
+            tmp.id = 0;
+            lastNMessages.push_back(tmp);
+            return lastNMessages;
         }
         return lastNMessages;
     }
 
     message Get(const uint32_t mid){
-        #ifdef DEBUG
-        printf("DEBUG>> Getting message with id: %d\n", mid);
-        #endif
         for (int i = 0; i < messages.size(); i++) {
             if (messages[i].id == mid) {
                 #ifdef DEBUG
@@ -73,20 +77,24 @@ public:
         return m;
     }
 
-    std::vector<uint8_t> serialize(const message msg) {
-        ssize_t buffer_size = msg.author.size() + msg.body.size() + msg.title.size();
-        std::vector<uint8_t> buffer(buffer_size);
+    std::vector<uint8_t> serialize(struct message msg) {
+        //ssize_t buffer_size = sizeof(msg.id) + msg.author.size() + msg.body.size() + msg.title.size();
+        std::vector<uint8_t> buffer(MAX_MESSAGE_SIZE);
 
-        ssize_t position = 0;
+        int position = 0;
+        
+        // copy the msg.id at the beginning of the buffer
+        std::memcpy(buffer.data() + position, &msg.id, sizeof(uint32_t));
+        position += sizeof(uint32_t);
 
-        std::copy(msg.author.begin(), msg.author.end(), buffer.begin() + position);
-        position += msg.author.size();
+        std::memcpy(buffer.data() + position, msg.author.c_str(), msg.author.size());
+        position += NAME_SIZE;
 
-        std::copy(msg.body.begin(), msg.body.end(), buffer.begin() + position);
-        position += msg.body.size();
+        std::memcpy(buffer.data() + position, msg.title.c_str(), msg.title.size());
+        position += MAX_TITLE_SIZE;
 
-        std::copy(msg.title.begin(), msg.title.end(), buffer.begin() + position);
-        position += msg.title.size();
+        std::memcpy(buffer.data() + position, msg.body.c_str(), msg.body.size());
+        position += MAX_BODY_SIZE;
 
         return buffer;
     }

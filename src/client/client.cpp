@@ -939,12 +939,81 @@ void Client::list(int n){
     printf("DEBUG>> Number of messages sent\n");
     #endif
 
-    //compute the size of the message
-    int messageSize = MAX_MESSAGE_SIZE * n + s1.iv.size() + s1.hmac.size();
-
-    std::vector<uint8_t> message(messageSize);
-
+    std::vector<uint8_t> newmsg(sessionMessage::get_size(sizeof(uint32_t)));
     try {
+        receiveFromServer(newmsg);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(newmsg.data(), 0, newmsg.size());
+        newmsg.clear();
+
+        throw std::runtime_error("Error receiving message from server");
+    
+    }
+    sessionMessage tmp = sessionMessage::deserialize(newmsg, sizeof(uint32_t));
+    std::vector<uint8_t> plaintexttmp(sessionMessage::get_size(sizeof(uint32_t)));
+    tmp.decrypt(this->sessionKey, plaintexttmp);
+    uint32_t size = htonl(*reinterpret_cast<uint32_t*>(plaintexttmp.data()));
+
+    std::memset(plaintexttmp.data(), 0, plaintexttmp.size());
+    plaintexttmp.clear();
+    #ifdef DEBUG
+        printf("DEBUG>> Number of mesasges found: %d\n", size);
+    #endif
+    //compute the size of the message
+    //int messageSize = MAX_MESSAGE_SIZE * n + s1.iv.size() + s1.hmac.size();
+    
+    for(int i = 0; i < size; i++) {//for(int i = 0; i < n; i++) {
+        std::vector<uint8_t> message(sessionMessage::get_size(MAX_MESSAGE_SIZE));
+
+        try {
+            receiveFromServer(message);
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << std::endl;
+            std::memset(message.data(), 0, message.size());
+            message.clear();
+
+            throw std::runtime_error("Error receiving message from server");
+        }
+        sessionMessage s3 = sessionMessage::deserialize(message, MAX_MESSAGE_SIZE);
+
+        std::vector<uint8_t> plaintext(sessionMessage::get_size(MAX_MESSAGE_SIZE));
+        s3.decrypt(this->sessionKey, plaintext);
+
+        void* address = &plaintext[0];
+        #ifdef DEBUG
+            printf("DEBUG>> %d\n", plaintext[0]);
+        #endif
+
+        if(plaintext[0] == 0){
+            printf("No message to visualize.\n");
+            std::memset(plaintext.data(), 0, plaintext.size());
+            getchar();
+            return;
+        }
+
+        std::string author(reinterpret_cast<char*>(address + sizeof(uint32_t)));
+
+        address = address + sizeof(uint32_t) + NAME_SIZE*sizeof(uint8_t);
+
+        std::string title(reinterpret_cast<char*>(address));
+        
+        address = address + MAX_TITLE_SIZE*sizeof(uint8_t);
+
+        std::string body(reinterpret_cast<char*>(address));
+
+        std::memset(plaintext.data(), 0, plaintext.size());
+        plaintext.clear();
+
+        printf("RECEIVED MESSAGE:\n");
+        printf("\tAuthor: %s\n", author.c_str());
+        printf("\tTitle: %s\n", title.c_str());
+        printf("\tBody: %s\n", body.c_str());
+    }
+    getchar();
+    return;
+
+    /*try {
         receiveFromServer(message);
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -1006,7 +1075,7 @@ void Client::list(int n){
     std::memset(plaintext.data(), 0, plaintext.size());
     plaintext.clear();
 
-    return;   
+    return; */  
 }
 
 void Client::add(){
