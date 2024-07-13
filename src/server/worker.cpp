@@ -1252,8 +1252,15 @@ void Worker::ListHandler() {
     //sessionMessage session_msg;
     std::vector<message> messages = bbs->List(n);
     uint32_t size = messages.size();
+    #ifdef DEBUG
+        printf("DEBUG>> MEssages found: %d\n", size);
+    #endif
+    uint32_t size1 = ntohl(size);
     std::vector<uint8_t> serializedSize(sizeof(size));
-    std::memcpy(serializedSize.data(), &size, sizeof(size));
+    std::memcpy(serializedSize.data(), &size1, sizeof(size1));
+    #ifdef EDBUG
+        printf("DEBUG>> Serialized size: %d\n", serializedSize.data());
+    #endif
     sessionMessage tmp = sessionMessage(this->sessionKey, this->hmacKey, serializedSize);
     std::vector<uint8_t> serializedSessionMessageTmp = tmp.serialize();
     try {
@@ -1299,7 +1306,6 @@ void Worker::ListHandler() {
     #ifdef DEBUG
         printf("DEBUG>> Funziona\n");
     #endif
-    getchar();
     return;
 
     /*std::memset(serializedMessages.data(), 0, serializedMessages.size());

@@ -141,6 +141,7 @@ int main(int argc, char *argv[]) {
             std::cin >> n;
 
             client.list(n);
+            getchar();
             break;
 
         case GET_CODE:

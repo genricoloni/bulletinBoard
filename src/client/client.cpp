@@ -951,15 +951,19 @@ void Client::list(int n){
     
     }
     sessionMessage tmp = sessionMessage::deserialize(newmsg, sizeof(uint32_t));
-    std::vector<uint8_t> plaintexttmp(sessionMessage::get_size(MAX_MESSAGE_SIZE));
+    std::vector<uint8_t> plaintexttmp(sessionMessage::get_size(sizeof(uint32_t)));
     tmp.decrypt(this->sessionKey, plaintexttmp);
+    uint32_t size = htonl(*reinterpret_cast<uint32_t*>(plaintexttmp.data()));
+
+    std::memset(plaintexttmp.data(), 0, plaintexttmp.size());
+    plaintexttmp.clear();
     #ifdef DEBUG
-        printf("DEBUG>> %d\n", plaintexttmp);
+        printf("DEBUG>> Number of mesasges found: %d\n", size);
     #endif
     //compute the size of the message
     //int messageSize = MAX_MESSAGE_SIZE * n + s1.iv.size() + s1.hmac.size();
-    int i = 0;
-    while(i < n) {//for(int i = 0; i < n; i++) {
+    
+    for(int i = 0; i < size; i++) {//for(int i = 0; i < n; i++) {
         std::vector<uint8_t> message(sessionMessage::get_size(MAX_MESSAGE_SIZE));
 
         try {
@@ -971,7 +975,6 @@ void Client::list(int n){
 
             throw std::runtime_error("Error receiving message from server");
         }
-        i++;
         sessionMessage s3 = sessionMessage::deserialize(message, MAX_MESSAGE_SIZE);
 
         std::vector<uint8_t> plaintext(sessionMessage::get_size(MAX_MESSAGE_SIZE));
@@ -984,6 +987,7 @@ void Client::list(int n){
 
         if(plaintext[0] == 0){
             printf("No message to visualize.\n");
+            std::memset(plaintext.data(), 0, plaintext.size());
             getchar();
             return;
         }
