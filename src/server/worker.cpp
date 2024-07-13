@@ -1100,6 +1100,19 @@ void Worker::waitForRequest(){
                 AddHandler();
                 break;
 
+            case GET_CODE:
+                #ifdef DEBUG
+                    printf("DEBUG>> GET_CODE\n");   
+                #endif
+                GetHandler();
+                break;
+
+            default:
+                sendError();
+                break;                
+
+
+
         }
     }
 }
@@ -1118,6 +1131,22 @@ void Worker::sendAck(){
     std::memset(serializedAck.data(), 0, serializedAck.size());
     serializedAck.clear();
 }
+
+void Worker::sendError(){
+    ProtocolM4Response ack(NACK);
+    std::vector<uint8_t> serializedAck = ack.serialize();
+
+    try {
+        workerSend(serializedAck);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return;
+    }
+
+    std::memset(serializedAck.data(), 0, serializedAck.size());
+    serializedAck.clear();
+}
+
 
 void Worker::AddHandler() {
     #ifdef DEBUG
@@ -1205,18 +1234,94 @@ void Worker::AddHandler() {
 
 }
 
-void Worker::GetHandler(const int mid) {
-    sessionMessage session_msg;
-    message msg = bbs->Get(mid);
-    std::vector<uint8_t> serializedMsg = bbs->serialize(msg);
 
-    // serialize the body into the session message
-    session_msg = sessionMessage(this->sessionKey, this->hmacKey, serializedMsg);
+void Worker::GetHandler() {
+    sendAck();
+    #ifdef DEBUG
+        printf("DEBUG>> GetHandler\n");
+    #endif
+    std::vector<uint8_t> buffer(sessionMessage::get_size(sizeof(uint32_t)));
+    try {
+        receiveMessage(buffer, sessionMessage::get_size(sizeof(uint32_t)));
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return;
+    }
 
-    std::vector<uint8_t> serializedSessionMessage = session_msg.serialize();
+    #ifdef DEBUG
+        printf("DEBUG>> Received message\n");
+    #endif
+
+    sessionMessage session_msg = sessionMessage::deserialize(buffer, sizeof(uint32_t));
+
+    std::vector<uint8_t> plaintext(sessionMessage::get_size(sizeof(uint32_t)));
+    session_msg.decrypt(this->sessionKey, plaintext);
+
+    uint32_t id = ntohl(*reinterpret_cast<uint32_t*>(plaintext.data()));
+
+    std::memset(plaintext.data(), 0, plaintext.size());
+    plaintext.clear();
+
+    #ifdef DEBUG
+        printf("DEBUG>> Received n: %d\n", id);
+    #endif
+
+    //get the message with id = id
+
+    message msg = bbs->Get(id);
+
+    //resize the fields of the message to the maximum size
+    std::vector<uint8_t> serializedMsg(MAX_MESSAGE_SIZE);
+    int i = 0;
+
+    //id
+    std::memcpy(serializedMsg.data() + i, &msg.id, sizeof(uint32_t));
+    i += sizeof(uint32_t);
+
+    //author
+    std::memcpy(serializedMsg.data() + i, msg.author.c_str(), NAME_SIZE * sizeof(uint8_t));
+    i += NAME_SIZE * sizeof(uint8_t);
+
+    //title
+    std::memcpy(serializedMsg.data() + i, msg.title.c_str(), MAX_TITLE_SIZE * sizeof(uint8_t));
+    i += MAX_TITLE_SIZE * sizeof(uint8_t);
+
+    //body
+    std::memcpy(serializedMsg.data() + i, msg.body.c_str(), MAX_BODY_SIZE * sizeof(uint8_t));
+    i += MAX_BODY_SIZE * sizeof(uint8_t);
+
+
+
+
+    #ifdef DEBUG
+        printf("DEBUG>> Message retrieved\n");
+        printf("DEBUG>> ID: %d\n", serializedMsg[0]);
+        printf("DEBUG>> Author: %s\n", reinterpret_cast<char*>(serializedMsg.data() + sizeof(uint32_t)));
+        printf("DEBUG>> Title: %s\n", reinterpret_cast<char*>(serializedMsg.data() + sizeof(uint32_t) + NAME_SIZE * sizeof(uint8_t)));
+        printf("DEBUG>> Body: %s\n", reinterpret_cast<char*>(serializedMsg.data() + sizeof(uint32_t) + NAME_SIZE * sizeof(uint8_t) + MAX_TITLE_SIZE * sizeof(uint8_t)));
+    #endif
+
+    //serialize the message
+    
+
+    #ifdef DEBUG
+        printf("DEBUG>> Message serialized\n");
+    #endif
+
+    //create a session message with the serialized message
+    sessionMessage session_msg2 = sessionMessage(this->sessionKey, this->hmacKey, serializedMsg);
+
+    std::vector<uint8_t> serializedSessionMessage = session_msg2.serialize();
+
+    #ifdef DEBUG
+        printf("DEBUG>> Session message serialized\n");
+    #endif
 
     try {
         workerSend(serializedSessionMessage);
+        #ifdef DEBUG
+            printf("DEBUG>> Sent message to client\n");
+        #endif
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return;
@@ -1224,6 +1329,12 @@ void Worker::GetHandler(const int mid) {
 
     std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
     serializedSessionMessage.clear();
+
+    std::memset(serializedMsg.data(), 0, serializedMsg.size());
+    serializedMsg.clear();
+
+    return;
+
 }
 
 void Worker::ListHandler() {

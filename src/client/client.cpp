@@ -1226,6 +1226,166 @@ void Client::add(){
 
 void Client::get(int requestedID){
     
+    //prepare the message with the code
+    std::vector<uint8_t> serializedCode(sizeof(GET_CODE));
+    uint32_t code = htonl(GET_CODE);
+
+    std::memcpy(serializedCode.data(), &code, sizeof(code));
+
+    sessionMessage s1(this->sessionKey, this->hmacKey, serializedCode);
+
+    std::vector<uint8_t> serializedSessionMessage = s1.serialize();
+
+    try {
+        sendToServer(serializedSessionMessage);
+        std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+        serializedSessionMessage.clear();
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(serializedSessionMessage.data(), 0, serializedSessionMessage.size());
+        serializedSessionMessage.clear();
+
+        throw std::runtime_error("Error sending message to server");
+    }
+
+    #ifdef DEBUG
+    printf("DEBUG>> Code sent\n");
+    #endif
+
+    //receive the response from the server
+    std::vector<uint8_t> m4ResponseBuffer(ProtocolM4Response::GetSize());
+
+    try {
+        receiveFromServer(m4ResponseBuffer);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(m4ResponseBuffer.data(), 0, m4ResponseBuffer.size());
+        m4ResponseBuffer.clear();
+
+        throw std::runtime_error("Error receiving message from server");
+    }
+
+    #ifdef DEBUG
+    printf("DEBUG>> Response received\n");
+    #endif
+
+    ProtocolM4Response m4Response1 = ProtocolM4Response::deserialize(m4ResponseBuffer);
+
+    std::memset(m4ResponseBuffer.data(), 0, m4ResponseBuffer.size());
+
+    if (m4Response1.response == ACK) {
+        #ifdef DEBUG
+        printf("Get successful\n");
+        #endif
+    } else {
+        std::cerr << "Get failed" << std::endl;
+    }
+
+    #ifdef DEBUG
+    printf("DEBUG>> ACK received\n");
+    #endif
+
+    //send the requested ID
+    std::vector<uint8_t> serializedID(sizeof(requestedID));
+    uint32_t id = htonl(requestedID);
+
+    std::memcpy(serializedID.data(), &id, sizeof(id));
+
+    sessionMessage s2(this->sessionKey, this->hmacKey, serializedID);
+
+    std::vector<uint8_t> serializedSessionMessage1 = s2.serialize();
+
+    try {
+        sendToServer(serializedSessionMessage1);
+        std::memset(serializedSessionMessage1.data(), 0, serializedSessionMessage1.size());
+        serializedSessionMessage1.clear();
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(serializedSessionMessage1.data(), 0, serializedSessionMessage1.size());
+        serializedSessionMessage1.clear();
+
+        throw std::runtime_error("Error sending message to server");
+    }
+
+    #ifdef DEBUG
+    printf("DEBUG>> ID sent\n");
+    #endif
+
+    //compute the size of the message
+
+    std::vector<uint8_t> message(sessionMessage::get_size(MAX_MESSAGE_SIZE));
+
+    try {
+        receiveFromServer(message);
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        std::memset(message.data(), 0, message.size());
+        message.clear();
+
+        throw std::runtime_error("Error receiving message from server");
+    }
+
+    #ifdef DEBUG
+    printf("DEBUG>> Message received\n");
+    #endif
+    
+
+    sessionMessage s3 = sessionMessage::deserialize(message, MAX_MESSAGE_SIZE);
+
+    std::vector<uint8_t> plaintext(sessionMessage::get_size(MAX_MESSAGE_SIZE));
+    s3.decrypt(this->sessionKey, plaintext);
+
+    #ifdef DEBUG
+    printf("DEBUG>> ID: %d\n", plaintext[0]);
+    #endif
+
+    if (plaintext[0] == 0) {
+        std::cerr << "Message not found" << std::endl;
+        std::memset(plaintext.data(), 0, plaintext.size());
+        plaintext.clear();
+
+        return;
+    }
+
+    void* address = &plaintext[0];
+
+    #ifdef  DEBUG
+    printf("DEBUG>> Address: %p\n", address);
+    #endif
+
+    std::string author(reinterpret_cast<char*>(address + sizeof(uint32_t)));
+
+    #ifdef DEBUG
+    printf("DEBUG>> Author: %s\n", author.c_str());
+    #endif
+
+    address = address + sizeof(uint32_t) + NAME_SIZE*sizeof(uint8_t);
+
+    std::string title(reinterpret_cast<char*>(address));
+
+    #ifdef DEBUG
+    printf("DEBUG>> Title: %s\n", title.c_str());
+    #endif
+
+    address = address + MAX_TITLE_SIZE*sizeof(uint8_t);
+
+    std::string body(reinterpret_cast<char*>(address));
+
+    #ifdef DEBUG
+    printf("DEBUG>> Body: %s\n", body.c_str());
+    #endif
+
+    std::memset(plaintext.data(), 0, plaintext.size());
+    plaintext.clear();
+
+    printf("RECEIVED MESSAGE\n");
+    printf("\tAuthor: %s\n", author.c_str());
+    printf("\tTitle: %s\n", title.c_str());
+    printf("\tBody: %s\n", body.c_str());
+
+    return;
+    
+    
 }
 
    

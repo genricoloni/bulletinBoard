@@ -60,12 +60,18 @@ public:
         return lastNMessages;
     }
 
-    message Get(const int mid) {
+    message Get(const uint32_t mid){
         for (int i = 0; i < messages.size(); i++) {
             if (messages[i].id == mid) {
+                #ifdef DEBUG
+                printf("DEBUG>> Found message with id: %d\n", mid);
+                #endif
                 return messages[i];
             }
         }
+        #ifdef DEBUG
+        printf("DEBUG>> Message with id: %d not found\n", mid);
+        #endif
         message m;
         m.id = 0;
         return m;
