@@ -38,9 +38,18 @@ public:
     void Add(const std::string& title, const std::string& author, const std::string& body){
         message m;
         m.id = nextId;
-        m.title = title;
+
+        #ifdef DEBUG
+            printf("DEBUG>> [RECEIVED] Title: %s\n", title.c_str());
+            printf("DEBUG>> [RECEIVED] Author: %s\n", author.c_str());
+            printf("DEBUG>> [RECEIVED] Body: %s\n", body.c_str());
+        #endif
+
+        // copy the author, title and body to the message struct
         m.author = author;
+        m.title = title;
         m.body = body;
+
         messages.insert(messages.begin(),m);
         nextId++;
     }

@@ -1144,14 +1144,12 @@ void Client::add(){
 
     //get the title
     printf("Insert title: ");
-    std::cin >> title;
-    getchar();
-
+    std::getline(std::cin, title);
+    
     //get the body
     printf("Insert body: ");
-    std::cin >> body;
-    getchar();
-
+    std::getline(std::cin, body);
+    
     m.title = title;
     m.body = body;
 
