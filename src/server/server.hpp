@@ -48,11 +48,4 @@ private:
     struct sockaddr_in userAddress;
     int userAddressLength;
     int userSocket;
-
-    void handleClient();
-    void stopListening();
-
-
-
-    sockaddr_in address(); //server address
 };

@@ -15,32 +15,6 @@ Worker::~Worker(){
     return;
 }
 
-void Worker::handleUser(){
-    //accept user
-    userSocket = accept(userSocket, (struct sockaddr *) &userAddress, &userAddressLength);
-    if (userSocket < 0) {
-        perror("Error on accept");
-        exit(1);
-    }
-
-    //read from user
-    char buffer[256];
-    bzero(buffer, 256);
-    int n = read(userSocket, buffer, 255);
-    if (n < 0) {
-        perror("Error reading from socket");
-        exit(1);
-    }
-
-    //write to user
-    n = write(userSocket, "I got your message", 18);
-    if (n < 0) {
-        perror("Error writing to socket");
-        exit(1);
-    }
-
-    close(userSocket);
-}
 
 void Worker::workerMain(){
     while(true){
@@ -453,10 +427,10 @@ bool Worker::login() {
     bool success = false;
 
     //receive message with username and empty email
-    std::vector<uint8_t> userMessage(ProtocolM4Reg_Usr::GetSize());
+    std::vector<uint8_t> userMessage(ProtocolM4Cred_Usr::GetSize());
 
     try {
-        this->receiveMessage(userMessage, ProtocolM4Reg_Usr::GetSize());
+        this->receiveMessage(userMessage, ProtocolM4Cred_Usr::GetSize());
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return false;
@@ -466,7 +440,7 @@ bool Worker::login() {
         printf("DEBUG>> Received M4 from client\n");
     #endif
 
-    ProtocolM4Reg_Usr m4Reg_Usr = ProtocolM4Reg_Usr::deserialize(userMessage);
+    ProtocolM4Cred_Usr m4Reg_Usr = ProtocolM4Cred_Usr::deserialize(userMessage);
 
     #ifdef DEBUG
         printf("DEBUG>> Deserialized M4\n");
@@ -626,10 +600,10 @@ bool Worker::login() {
 bool Worker::registerUser() {
     bool success = false;
     //receive message with username and email
-    std::vector<uint8_t> serializedM4Reg_Usr(ProtocolM4Reg_Usr::GetSize());
+    std::vector<uint8_t> serializedM4Reg_Usr(ProtocolM4Cred_Usr::GetSize());
 
     try {
-        this->receiveMessage(serializedM4Reg_Usr, ProtocolM4Reg_Usr::GetSize());
+        this->receiveMessage(serializedM4Reg_Usr, ProtocolM4Cred_Usr::GetSize());
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return false;
@@ -640,7 +614,7 @@ bool Worker::registerUser() {
     #endif
 
     //deserialize message
-    ProtocolM4Reg_Usr m4Reg_Usr = ProtocolM4Reg_Usr::deserialize(serializedM4Reg_Usr);
+    ProtocolM4Cred_Usr m4Reg_Usr = ProtocolM4Cred_Usr::deserialize(serializedM4Reg_Usr);
 
     #ifdef DEBUG
         printf("DEBUG>> Deserialized M4\n");

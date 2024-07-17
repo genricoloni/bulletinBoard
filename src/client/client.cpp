@@ -513,7 +513,7 @@ bool Client::login(){
     #endif
 
     //prepare the message with the username and empty email
-    ProtocolM4Reg_Usr m4(username, "");
+    ProtocolM4Cred_Usr m4(username, "");
 
     std::vector<uint8_t> serializedM4;
     serializedM4 = m4.serialize();
@@ -643,7 +643,7 @@ bool Client::registerUser(){
     #endif
 
     //prepare the message
-    ProtocolM4Reg_Usr m4(username, mail);
+    ProtocolM4Cred_Usr m4(username, mail);
 
     std::vector<uint8_t> serializedM4;
     serializedM4 = m4.serialize();
@@ -663,7 +663,7 @@ bool Client::registerUser(){
 
     #ifdef DEBUG
     //try to deserialize the message m4 and print the content
-    ProtocolM4Reg_Usr m4_1 = ProtocolM4Reg_Usr::deserialize(serializedM4);
+    ProtocolM4Cred_Usr m4_1 = ProtocolM4Cred_Usr::deserialize(serializedM4);
     printf("M4 deserialized\n");
     printf("Username: %s\n", m4_1.username.c_str());
     printf("Mail: %s\n", m4_1.email.c_str());
@@ -789,7 +789,6 @@ bool Client::registerUser(){
 }
 
 void Client::sendPassword(std::string password) {
-    //MODIFY TO SEND HASHED PASSWORD
     IncrementCounter();
 
     PasswordMessage message(password.c_str(), this->counter);

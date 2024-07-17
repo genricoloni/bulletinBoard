@@ -259,7 +259,7 @@ struct ProtocolM3 {
     }
         
 };
-struct ProtocolM4Reg_Usr {
+struct ProtocolM4Cred_Usr {
     // this struct only contains username and email for the registration
     uint32_t userSize;
     std::string username;
@@ -267,9 +267,9 @@ struct ProtocolM4Reg_Usr {
     std::string email;
 
     // Constructor with default sizes for username and email
-    ProtocolM4Reg_Usr() : username(USER_MAX_SIZE, '\0'), email(MAIL_MAX_SIZE, '\0') {}
+    ProtocolM4Cred_Usr() : username(USER_MAX_SIZE, '\0'), email(MAIL_MAX_SIZE, '\0') {}
 
-    ProtocolM4Reg_Usr(std::string username, std::string email) {
+    ProtocolM4Cred_Usr(std::string username, std::string email) {
         this->username = username;
         this->email = email;
         this->userSize = username.size();
@@ -281,7 +281,7 @@ struct ProtocolM4Reg_Usr {
     }
 
     std::vector<uint8_t> serialize() {
-        std::vector<uint8_t> buffer(ProtocolM4Reg_Usr::GetSize());
+        std::vector<uint8_t> buffer(ProtocolM4Cred_Usr::GetSize());
         size_t position = 0;
 
         uint32_t userSizeNetwork = htonl(this->userSize);
@@ -300,8 +300,8 @@ struct ProtocolM4Reg_Usr {
         return buffer;
     }
 
-    static ProtocolM4Reg_Usr deserialize(std::vector<uint8_t> buffer) {
-        ProtocolM4Reg_Usr m4;
+    static ProtocolM4Cred_Usr deserialize(std::vector<uint8_t> buffer) {
+        ProtocolM4Cred_Usr m4;
 
         size_t position = 0;
 

@@ -47,6 +47,7 @@ typedef struct job job_t;
     * This class is responsible for handling the client requests.
     * Each worker is responsible for handling a single client; once the client is done, the worker is free to handle another client.
 */
+
 class Worker {
 public:
     Worker(job_t* job, FileRWLock* fileLock, BulletinBoardSystem* bbs, FileRWLock* messageLock);
@@ -56,31 +57,39 @@ public:
 
 private:
 
+    //shared structs
     FileRWLock* fileLock;
+    FileRWLock* messageLock;
     BulletinBoardSystem* bbs;
 
-    FileRWLock* messageLock;
-
+    //variables for secure protocol
     job_t* job;
     std::vector<uint8_t> iv;
     std::vector<uint8_t> hmacKey;
     std::vector<uint8_t> sessionKey;
     uint32_t counter;
-
     const std::string serverPrivateKeyPath = "res/keys/private/server.pem";
 
-    ssize_t workerSend(const std::vector<uint8_t>& buffer);
-    
-
+    //variables for user
     int userSocket;
     struct sockaddr_in userAddress;
     socklen_t userAddressLength;
-    void handleUser();
 
+    //thread logic functions
     void initiateProtocol();
+    void waitForRequest();
+    void AddHandler();
+    void ListHandler();
+    void GetHandler();
 
+    //utility functions
+    void sendAck();
+    void sendError();
+    ssize_t workerSend(const std::vector<uint8_t>& buffer);
     ssize_t receiveMessage(std::vector<uint8_t>& buffer, ssize_t bufferSize);
 
+
+    //functions to handle login and register
     bool login();
     bool registerUser();
 
@@ -90,11 +99,4 @@ private:
     bool writeUser(const std::string& username, const std::string& email, const uint8_t* hashedPassword);
     bool checkPassword(const std::string& username, const uint8_t* hashedPassword);
 
-    void waitForRequest();
-    void AddHandler();
-    void ListHandler();
-    void GetHandler();
-
-    void sendAck();
-    void sendError();
 };

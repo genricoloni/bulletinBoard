@@ -62,8 +62,6 @@ void Server::acceptClient() {
     
     jobs->isDone = false;
 
-
-
     workers.reserve(workerCount);
     workerThreads.reserve(workerCount);
 

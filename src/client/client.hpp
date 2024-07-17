@@ -27,15 +27,18 @@ public:
     Client(int port);
     ~Client();
 
+    //connection and communication
     void connectToServer();
     void sendToServer(const std::vector<uint8_t>& message);
     void receiveFromServer(std::vector<uint8_t>& message);
 
     bool initiateProtocol(uint32_t mode);
 
+    //login-register
     bool login();
     bool registerUser();
 
+    //client logic
     void list(int n);
     void get(int mID);
     void add();
@@ -52,19 +55,15 @@ private:
 
     std::string username;
 
-
+    //secure protocol variables
     uint32_t counter; 
     std::vector<uint8_t> hmacKey;
     std::vector<uint8_t> sessionKey;
 
+    //utility functions
     void turnOnEcho();
     void turnOffEcho();
-
-    void HashPassword(const std::string& password, std::vector<uint8_t>& hashedPassword);
-    void sendPassword(std::string password);
     void IncrementCounter();
 
-
-
-
+    void sendPassword(std::string password);
 };
