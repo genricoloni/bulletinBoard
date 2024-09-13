@@ -490,7 +490,7 @@ bool Client::login(){
     //get the password
     char ch;
     printf("Insert password: ");
-    //turnOffEcho();
+    turnOffEcho();
     do {
         ch = getchar();
         if (ch == 127) {
@@ -506,7 +506,7 @@ bool Client::login(){
         }  
     } while (ch != '\n' && ch != '\r' && password.size() < PASSWORD_MAX_SIZE);
 
-    //turnOnEcho();
+    turnOnEcho();
 
     #ifdef DEBUG
     printf("DEBUG>> Password inserted: %s\n", password.c_str());
